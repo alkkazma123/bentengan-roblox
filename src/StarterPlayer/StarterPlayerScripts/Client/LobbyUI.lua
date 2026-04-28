@@ -87,7 +87,7 @@ function LobbyUI.new(gui: ScreenGui)
 	local coinsLabel = Instance.new("TextLabel")
 	coinsLabel.Size = UDim2.fromOffset(200, 40)
 	coinsLabel.AnchorPoint = Vector2.new(1, 0.5)
-	coinsLabel.Position = UDim2.new(1, -360, 0.5, 0)
+	coinsLabel.Position = UDim2.new(1, -415, 0.5, 0)
 	coinsLabel.BackgroundColor3 = Theme.Colors.Panel
 	coinsLabel.Font = Theme.FontBold
 	coinsLabel.TextSize = 16
@@ -102,7 +102,7 @@ function LobbyUI.new(gui: ScreenGui)
 	local rulesBtn = Instance.new("TextButton")
 	rulesBtn.Size = UDim2.fromOffset(100, 40)
 	rulesBtn.AnchorPoint = Vector2.new(1, 0.5)
-	rulesBtn.Position = UDim2.new(1, -350, 0.5, 0)
+	rulesBtn.Position = UDim2.new(1, -305, 0.5, 0)
 	rulesBtn.BackgroundColor3 = Theme.Colors.Panel
 	rulesBtn.AutoButtonColor = false
 	rulesBtn.Font = Theme.FontMed
@@ -117,7 +117,7 @@ function LobbyUI.new(gui: ScreenGui)
 	local shopBtn = Instance.new("TextButton")
 	shopBtn.Size = UDim2.fromOffset(100, 40)
 	shopBtn.AnchorPoint = Vector2.new(1, 0.5)
-	shopBtn.Position = UDim2.new(1, -130, 0.5, 0)
+	shopBtn.Position = UDim2.new(1, -140, 0.5, 0)
 	shopBtn.BackgroundColor3 = Theme.Colors.Accent
 	shopBtn.AutoButtonColor = false
 	shopBtn.Font = Theme.FontBold
@@ -148,7 +148,7 @@ function LobbyUI.new(gui: ScreenGui)
 	local minimizeBtn = Instance.new("TextButton")
 	minimizeBtn.Size = UDim2.fromOffset(44, 40)
 	minimizeBtn.AnchorPoint = Vector2.new(1, 0.5)
-	minimizeBtn.Position = UDim2.new(1, -240, 0.5, 0)
+	minimizeBtn.Position = UDim2.new(1, -250, 0.5, 0)
 	minimizeBtn.BackgroundColor3 = Theme.Colors.Panel
 	minimizeBtn.AutoButtonColor = false
 	minimizeBtn.Font = Theme.FontBold
