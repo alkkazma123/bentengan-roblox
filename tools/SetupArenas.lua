@@ -1,46 +1,60 @@
---!strict
--- Procedurally generates 4 lobby arenas placed far apart in Workspace.
--- Each arena has: floor, walls, two bases/benteng, two jails, spawn pads, safe zones.
+-- ======================================================================
+-- SetupArenas.lua
+-- ======================================================================
+-- Run this script ONCE in Roblox Studio's Command Bar (View -> Command Bar)
+-- while in EDIT MODE (not play mode). It will create four arenas under
+-- workspace.Arenas as PERSISTENT instances - after you save the place file
+-- these parts stay forever and you can move / resize / restyle them freely
+-- in Studio (they are not regenerated at runtime).
+--
+-- Instructions:
+--   1. Make sure you are NOT running the game (F5 is not active).
+--   2. Open the Command Bar: View menu -> Command Bar.
+--   3. Copy the ENTIRE contents of this file and paste into the Command Bar.
+--   4. Press Enter.
+--   5. A folder "Arenas" with Arena_1..Arena_4 appears in Workspace.
+--   6. Press Ctrl+S to save the place.
+--
+-- To rebuild from scratch: delete workspace.Arenas and run this script again.
+-- ======================================================================
 
 local Workspace = game:GetService("Workspace")
-local GameConfig = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("GameConfig"))
 
-local MapGenerator = {}
-
-export type ArenaData = {
-	Model: Model,
-	RedSpawn: BasePart,
-	BlueSpawn: BasePart,
-	RedBase: BasePart,
-	BlueBase: BasePart,
-	RedJail: BasePart,
-	BlueJail: BasePart,
-	RedSafeZone: BasePart,
-	BlueSafeZone: BasePart,
-	LobbySpawn: BasePart,
-}
-
-local ARENA_SPACING = 500 -- studs between arenas
+local NUM_ARENAS = 4
+local ARENA_SPACING = 500
 local ARENA_SIZE = Vector3.new(240, 1, 200)
 
-local function makePart(props: { [string]: any }): BasePart
+local RED_COLOR = Color3.fromRGB(225, 70, 70)
+local BLUE_COLOR = Color3.fromRGB(70, 130, 225)
+
+if Workspace:FindFirstChild("Arenas") then
+	warn("[SetupArenas] workspace.Arenas already exists - delete it first if you want to rebuild.")
+	return
+end
+
+local arenasFolder = Instance.new("Folder")
+arenasFolder.Name = "Arenas"
+arenasFolder.Parent = Workspace
+
+local function makePart(props)
 	local p = Instance.new("Part")
 	p.Anchored = true
 	p.Material = Enum.Material.SmoothPlastic
 	p.TopSurface = Enum.SurfaceType.Smooth
 	p.BottomSurface = Enum.SurfaceType.Smooth
-	for k, v in props do
-		(p :: any)[k] = v
+	for k, v in pairs(props) do
+		p[k] = v
 	end
 	return p
 end
 
-local function label(parent: BasePart, text: string, color: Color3)
+local function label(parent, text, color)
 	local bg = Instance.new("BillboardGui")
+	bg.Name = "NameLabel"
 	bg.Size = UDim2.new(0, 220, 0, 60)
 	bg.StudsOffset = Vector3.new(0, 6, 0)
 	bg.AlwaysOnTop = true
-	bg.MaxDistance = 500
+	bg.MaxDistance = 60 -- only visible when close
 	bg.Parent = parent
 	local tl = Instance.new("TextLabel")
 	tl.Size = UDim2.new(1, 0, 1, 0)
@@ -53,12 +67,12 @@ local function label(parent: BasePart, text: string, color: Color3)
 	tl.Parent = bg
 end
 
-function MapGenerator.buildArena(index: number): ArenaData
+local function buildArena(index)
 	local origin = Vector3.new((index - 1) * ARENA_SPACING, 50, 0)
 
 	local model = Instance.new("Model")
 	model.Name = "Arena_" .. index
-	model.Parent = Workspace
+	model.Parent = arenasFolder
 
 	-- Floor
 	local floor = makePart({
@@ -92,7 +106,7 @@ function MapGenerator.buildArena(index: number): ArenaData
 		{ pos = Vector3.new(halfX, wallHeight / 2, 0), size = Vector3.new(wallThickness, wallHeight, ARENA_SIZE.Z) },
 		{ pos = Vector3.new(-halfX, wallHeight / 2, 0), size = Vector3.new(wallThickness, wallHeight, ARENA_SIZE.Z) },
 	}
-	for i, w in walls do
+	for i, w in ipairs(walls) do
 		local wall = makePart({
 			Name = "Wall_" .. i,
 			Size = w.size,
@@ -103,7 +117,7 @@ function MapGenerator.buildArena(index: number): ArenaData
 		wall.Parent = model
 	end
 
-	local function makeZone(name: string, pos: Vector3, size: Vector3, color: Color3): BasePart
+	local function makeZone(name, pos, size, color)
 		local z = makePart({
 			Name = name,
 			Size = size,
@@ -117,38 +131,35 @@ function MapGenerator.buildArena(index: number): ArenaData
 		return z
 	end
 
-	local redColor = GameConfig.Teams.Red.Color
-	local blueColor = GameConfig.Teams.Blue.Color
-
-	-- Bases (benteng): a tall pillar inside each team's side
+	-- Bases (benteng)
 	local baseSize = Vector3.new(14, 16, 14)
 	local redBase = makePart({
 		Name = "RedBase",
 		Size = baseSize,
 		CFrame = CFrame.new(origin + Vector3.new(-halfX + 20, baseSize.Y / 2 + 0.5, 0)),
-		Color = redColor,
+		Color = RED_COLOR,
 		Material = Enum.Material.Neon,
 		Transparency = 0.2,
 	})
 	redBase.Parent = model
-	label(redBase, "RED BASE", redColor)
+	label(redBase, "RED BASE", RED_COLOR)
 
 	local blueBase = makePart({
 		Name = "BlueBase",
 		Size = baseSize,
 		CFrame = CFrame.new(origin + Vector3.new(halfX - 20, baseSize.Y / 2 + 0.5, 0)),
-		Color = blueColor,
+		Color = BLUE_COLOR,
 		Material = Enum.Material.Neon,
 		Transparency = 0.2,
 	})
 	blueBase.Parent = model
-	label(blueBase, "BLUE BASE", blueColor)
+	label(blueBase, "BLUE BASE", BLUE_COLOR)
 
-	-- Safe zones around each base (larger footprint, floating plate)
-	local redSafe = makeZone("RedSafeZone", Vector3.new(-halfX + 20, 0.6, 0), Vector3.new(40, 1, 40), redColor)
-	local blueSafe = makeZone("BlueSafeZone", Vector3.new(halfX - 20, 0.6, 0), Vector3.new(40, 1, 40), blueColor)
+	-- Safe zones
+	makeZone("RedSafeZone", Vector3.new(-halfX + 20, 0.6, 0), Vector3.new(40, 1, 40), RED_COLOR)
+	makeZone("BlueSafeZone", Vector3.new(halfX - 20, 0.6, 0), Vector3.new(40, 1, 40), BLUE_COLOR)
 
-	-- Jails (penjara) - opposite side of base for each team
+	-- Jails
 	local jailSize = Vector3.new(16, 10, 16)
 	local redJail = makePart({
 		Name = "RedJail",
@@ -177,20 +188,21 @@ function MapGenerator.buildArena(index: number): ArenaData
 		Name = "RedSpawn",
 		Size = Vector3.new(8, 1, 8),
 		CFrame = CFrame.new(origin + Vector3.new(-halfX + 20, 1.1, -20)),
-		Color = redColor,
+		Color = RED_COLOR,
 		Material = Enum.Material.Neon,
 	})
 	redSpawn.Parent = model
+
 	local blueSpawn = makePart({
 		Name = "BlueSpawn",
 		Size = Vector3.new(8, 1, 8),
 		CFrame = CFrame.new(origin + Vector3.new(halfX - 20, 1.1, 20)),
-		Color = blueColor,
+		Color = BLUE_COLOR,
 		Material = Enum.Material.Neon,
 	})
 	blueSpawn.Parent = model
 
-	-- Lobby spawn (where players wait before match)
+	-- Lobby spawn pad (where players wait before match)
 	local lobbySpawn = makePart({
 		Name = "LobbySpawn",
 		Size = Vector3.new(24, 1, 24),
@@ -202,26 +214,11 @@ function MapGenerator.buildArena(index: number): ArenaData
 	lobbySpawn.Parent = model
 	label(lobbySpawn, "LOBBY " .. index, Color3.fromRGB(255, 255, 255))
 
-	return {
-		Model = model,
-		RedSpawn = redSpawn,
-		BlueSpawn = blueSpawn,
-		RedBase = redBase,
-		BlueBase = blueBase,
-		RedJail = redJail,
-		BlueJail = blueJail,
-		RedSafeZone = redSafe,
-		BlueSafeZone = blueSafe,
-		LobbySpawn = lobbySpawn,
-	}
+	print(string.format("[SetupArenas] Built Arena_%d at %s", index, tostring(origin)))
 end
 
-function MapGenerator.buildAll(): { ArenaData }
-	local arenas = {}
-	for i = 1, GameConfig.NumLobbies do
-		arenas[i] = MapGenerator.buildArena(i)
-	end
-	return arenas
+for i = 1, NUM_ARENAS do
+	buildArena(i)
 end
 
-return MapGenerator
+print(string.format("[SetupArenas] Done! Created %d arenas in workspace.Arenas. Press Ctrl+S to save.", NUM_ARENAS))

@@ -5,6 +5,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local StarterGui = game:GetService("StarterGui")
+local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Remotes = require(Shared:WaitForChild("Remotes"))
@@ -178,6 +179,17 @@ Remotes.AbilityFeedback.OnClientEvent:Connect(function(info)
 	elseif info.Type == "ShopError" or info.Type == "Error" or info.Type == "AbilityError" then
 		shopUI:showMessage(info.Message or "Error")
 		hud:showToast(info.Message or "Error", Color3.fromRGB(255, 120, 120))
+	end
+end)
+
+-- Toggle lobby UI visibility with [M] so the player can walk freely around
+-- the lobby pad. Ignored while typing in chat or another text input.
+UserInputService.InputBegan:Connect(function(input, processed)
+	if processed then
+		return
+	end
+	if input.KeyCode == Enum.KeyCode.M and lobbyUI.visible then
+		lobbyUI:toggleMinimized()
 	end
 end)
 

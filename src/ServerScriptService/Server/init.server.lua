@@ -35,20 +35,18 @@ local function onPlayerAdded(player: Player)
 		task.wait(0.25)
 		local lobby = LobbyManager.getLobbyOfPlayer(player)
 		if not lobby then
-			local snapshot = LobbyManager.getSnapshot()
 			local hrp = char:FindFirstChild("HumanoidRootPart")
 			if hrp and hrp:IsA("BasePart") then
 				-- Place at first arena's lobby pad by default (a free floating pad)
-				local anyArena = workspace:FindFirstChild("Arena_1")
-				if anyArena then
-					local pad = anyArena:FindFirstChild("LobbySpawn")
+				local arenasFolder = workspace:FindFirstChild("Arenas")
+				local firstArena = arenasFolder and arenasFolder:FindFirstChild("Arena_1")
+				if firstArena then
+					local pad = firstArena:FindFirstChild("LobbySpawn")
 					if pad and pad:IsA("BasePart") then
 						hrp.CFrame = pad.CFrame + Vector3.new(math.random(-6, 6), 5, math.random(-6, 6))
 					end
 				end
 			end
-			-- Unused but silence warnings
-			local _ = snapshot
 		end
 	end)
 end
