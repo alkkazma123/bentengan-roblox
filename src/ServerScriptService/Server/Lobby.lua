@@ -203,6 +203,28 @@ function Lobby:_teleportToSpawn(player: Player)
 	end
 end
 
+function Lobby:_setJailLock(player: Player, locked: boolean)
+	local char = player.Character
+	if not char then
+		return
+	end
+	local humanoid = char:FindFirstChildOfClass("Humanoid")
+	if not humanoid then
+		return
+	end
+	if locked then
+		humanoid.WalkSpeed = 0
+		humanoid.JumpPower = 0
+		humanoid.JumpHeight = 0
+		humanoid.AutoRotate = false
+	else
+		humanoid.WalkSpeed = 16
+		humanoid.JumpPower = 50
+		humanoid.JumpHeight = 7.2
+		humanoid.AutoRotate = true
+	end
+end
+
 function Lobby:_teleportToJail(player: Player)
 	local team = self.teams[player]
 	-- Jailed in the ENEMY jail
@@ -215,6 +237,7 @@ function Lobby:_teleportToJail(player: Player)
 	if hrp and hrp:IsA("BasePart") then
 		hrp.CFrame = jail.CFrame + Vector3.new(math.random(-4, 4), 3, math.random(-4, 4))
 	end
+	self:_setJailLock(player, true)
 end
 
 function Lobby:_startMatch()
@@ -315,6 +338,7 @@ function Lobby:_onFree(_freer: Player, freed: Player)
 			hrp.CFrame = spawnPart.CFrame + Vector3.new(0, 4, 0)
 		end
 	end
+	self:_setJailLock(freed, false)
 	Remotes.JailUpdate:FireAllClients({
 		LobbyIndex = self.index,
 		Player = freed.UserId,
