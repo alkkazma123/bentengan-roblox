@@ -70,6 +70,23 @@ function Lobby:teleportToLobbyPad(player: Player)
 	end
 end
 
+function Lobby:teleportToWorldSpawn(player: Player)
+	local char = player.Character
+	if not char then
+		return
+	end
+	local hrp = char:FindFirstChild("HumanoidRootPart")
+	if not (hrp and hrp:IsA("BasePart")) then
+		return
+	end
+	local arenasFolder = workspace:FindFirstChild("Arenas")
+	local worldSpawnModel = arenasFolder and arenasFolder:FindFirstChild("WorldSpawn")
+	local spawnLoc = worldSpawnModel and worldSpawnModel:FindFirstChild("SpawnLocation")
+	if spawnLoc and spawnLoc:IsA("BasePart") then
+		hrp.CFrame = spawnLoc.CFrame + Vector3.new(math.random(-3, 3), 4, math.random(-3, 3))
+	end
+end
+
 function Lobby:addPlayer(player: Player): (boolean, string?)
 	if self.members[player] then
 		return false, "Sudah di lobby ini"
@@ -102,6 +119,7 @@ function Lobby:removePlayer(player: Player)
 	if self.state == "InMatch" then
 		self:_checkWinCondition()
 	end
+	self:teleportToWorldSpawn(player)
 	self:broadcastState()
 end
 

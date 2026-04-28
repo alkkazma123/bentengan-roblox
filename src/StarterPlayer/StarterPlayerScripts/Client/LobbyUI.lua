@@ -37,29 +37,29 @@ function LobbyUI.new(gui: ScreenGui)
 	root.Parent = gui
 	self.root = root
 
-	-- Floating "OPEN LOBBY" pill shown when the full UI is minimized.
+	-- Floating pill shown when the full UI is minimized. Big, high-contrast
+	-- so it's tappable on phones; the "[M]" hint is only helpful on desktop.
 	local reopenPill = Instance.new("TextButton")
 	reopenPill.Name = "ReopenLobbyPill"
-	reopenPill.Size = UDim2.fromOffset(200, 36)
+	reopenPill.Size = UDim2.fromOffset(260, 48)
 	reopenPill.AnchorPoint = Vector2.new(0.5, 0)
-	reopenPill.Position = UDim2.new(0.5, 0, 0, 12)
-	reopenPill.BackgroundColor3 = Theme.Colors.Bg
+	reopenPill.Position = UDim2.new(0.5, 0, 0, 14)
+	reopenPill.BackgroundColor3 = Theme.Colors.Accent
 	reopenPill.AutoButtonColor = false
 	reopenPill.Font = Theme.FontBold
-	reopenPill.TextSize = 14
-	reopenPill.TextColor3 = Theme.Colors.Text
-	reopenPill.Text = "OPEN LOBBY  [M]"
+	reopenPill.TextSize = 16
+	reopenPill.TextColor3 = Color3.new(0, 0, 0)
+	reopenPill.Text = "BUKA LOBBY"
 	reopenPill.Visible = false
 	reopenPill.ZIndex = 50
 	reopenPill.Parent = gui
-	Theme.applyCorner(reopenPill, UDim.new(0, 18))
-	Theme.applyStroke(reopenPill, Theme.Colors.Stroke)
+	Theme.applyCorner(reopenPill, UDim.new(0, 24))
 	self.reopenPill = reopenPill
 	reopenPill.MouseEnter:Connect(function()
-		reopenPill.BackgroundColor3 = Theme.Colors.Panel
+		reopenPill.BackgroundColor3 = Theme.Colors.AccentAlt
 	end)
 	reopenPill.MouseLeave:Connect(function()
-		reopenPill.BackgroundColor3 = Theme.Colors.Bg
+		reopenPill.BackgroundColor3 = Theme.Colors.Accent
 	end)
 	reopenPill.MouseButton1Click:Connect(function()
 		self:setMinimized(false)
@@ -143,26 +143,25 @@ function LobbyUI.new(gui: ScreenGui)
 	Theme.applyCorner(leaveBtn, Theme.SmallRadius)
 	self.leaveBtn = leaveBtn
 
-	-- Minimize button: collapses the full lobby UI so the player can walk
-	-- around the lobby pad freely. Re-opens via the floating pill or [M] key.
+	-- Close/minimize button: collapses the full lobby UI so the player can
+	-- walk around freely. Big and obvious so it's tappable on phones.
 	local minimizeBtn = Instance.new("TextButton")
 	minimizeBtn.Size = UDim2.fromOffset(44, 40)
 	minimizeBtn.AnchorPoint = Vector2.new(1, 0.5)
 	minimizeBtn.Position = UDim2.new(1, -250, 0.5, 0)
-	minimizeBtn.BackgroundColor3 = Theme.Colors.Panel
+	minimizeBtn.BackgroundColor3 = Theme.Colors.Danger
 	minimizeBtn.AutoButtonColor = false
 	minimizeBtn.Font = Theme.FontBold
 	minimizeBtn.TextSize = 20
-	minimizeBtn.TextColor3 = Theme.Colors.Text
-	minimizeBtn.Text = "—"
+	minimizeBtn.TextColor3 = Color3.new(1, 1, 1)
+	minimizeBtn.Text = "X"
 	minimizeBtn.Parent = topBar
 	Theme.applyCorner(minimizeBtn, Theme.SmallRadius)
-	Theme.applyStroke(minimizeBtn, Theme.Colors.Stroke)
 	minimizeBtn.MouseEnter:Connect(function()
-		minimizeBtn.BackgroundColor3 = Theme.Colors.PanelAlt
+		minimizeBtn.BackgroundColor3 = Color3.fromRGB(255, 120, 120)
 	end)
 	minimizeBtn.MouseLeave:Connect(function()
-		minimizeBtn.BackgroundColor3 = Theme.Colors.Panel
+		minimizeBtn.BackgroundColor3 = Theme.Colors.Danger
 	end)
 	minimizeBtn.MouseButton1Click:Connect(function()
 		self:setMinimized(true)
