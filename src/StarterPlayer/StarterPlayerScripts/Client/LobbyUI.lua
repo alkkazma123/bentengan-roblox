@@ -27,6 +27,8 @@ local STATE_LABELS = {
 
 function LobbyUI.new(gui: ScreenGui)
 	local self = setmetatable({}, LobbyUI)
+	self.minimized = false
+	self.visible = true
 
 	local root = Instance.new("Frame")
 	root.Name = "LobbyRoot"
@@ -34,6 +36,34 @@ function LobbyUI.new(gui: ScreenGui)
 	root.BackgroundTransparency = 1
 	root.Parent = gui
 	self.root = root
+
+	-- Floating "OPEN LOBBY" pill shown when the full UI is minimized.
+	local reopenPill = Instance.new("TextButton")
+	reopenPill.Name = "ReopenLobbyPill"
+	reopenPill.Size = UDim2.fromOffset(200, 36)
+	reopenPill.AnchorPoint = Vector2.new(0.5, 0)
+	reopenPill.Position = UDim2.new(0.5, 0, 0, 12)
+	reopenPill.BackgroundColor3 = Theme.Colors.Bg
+	reopenPill.AutoButtonColor = false
+	reopenPill.Font = Theme.FontBold
+	reopenPill.TextSize = 14
+	reopenPill.TextColor3 = Theme.Colors.Text
+	reopenPill.Text = "OPEN LOBBY  [M]"
+	reopenPill.Visible = false
+	reopenPill.ZIndex = 50
+	reopenPill.Parent = gui
+	Theme.applyCorner(reopenPill, UDim.new(0, 18))
+	Theme.applyStroke(reopenPill, Theme.Colors.Stroke)
+	self.reopenPill = reopenPill
+	reopenPill.MouseEnter:Connect(function()
+		reopenPill.BackgroundColor3 = Theme.Colors.Panel
+	end)
+	reopenPill.MouseLeave:Connect(function()
+		reopenPill.BackgroundColor3 = Theme.Colors.Bg
+	end)
+	reopenPill.MouseButton1Click:Connect(function()
+		self:setMinimized(false)
+	end)
 
 	-- Top bar
 	local topBar = Instance.new("Frame")
@@ -72,7 +102,7 @@ function LobbyUI.new(gui: ScreenGui)
 	local rulesBtn = Instance.new("TextButton")
 	rulesBtn.Size = UDim2.fromOffset(100, 40)
 	rulesBtn.AnchorPoint = Vector2.new(1, 0.5)
-	rulesBtn.Position = UDim2.new(1, -240, 0.5, 0)
+	rulesBtn.Position = UDim2.new(1, -350, 0.5, 0)
 	rulesBtn.BackgroundColor3 = Theme.Colors.Panel
 	rulesBtn.AutoButtonColor = false
 	rulesBtn.Font = Theme.FontMed
@@ -112,6 +142,32 @@ function LobbyUI.new(gui: ScreenGui)
 	leaveBtn.Parent = topBar
 	Theme.applyCorner(leaveBtn, Theme.SmallRadius)
 	self.leaveBtn = leaveBtn
+
+	-- Minimize button: collapses the full lobby UI so the player can walk
+	-- around the lobby pad freely. Re-opens via the floating pill or [M] key.
+	local minimizeBtn = Instance.new("TextButton")
+	minimizeBtn.Size = UDim2.fromOffset(44, 40)
+	minimizeBtn.AnchorPoint = Vector2.new(1, 0.5)
+	minimizeBtn.Position = UDim2.new(1, -240, 0.5, 0)
+	minimizeBtn.BackgroundColor3 = Theme.Colors.Panel
+	minimizeBtn.AutoButtonColor = false
+	minimizeBtn.Font = Theme.FontBold
+	minimizeBtn.TextSize = 20
+	minimizeBtn.TextColor3 = Theme.Colors.Text
+	minimizeBtn.Text = "—"
+	minimizeBtn.Parent = topBar
+	Theme.applyCorner(minimizeBtn, Theme.SmallRadius)
+	Theme.applyStroke(minimizeBtn, Theme.Colors.Stroke)
+	minimizeBtn.MouseEnter:Connect(function()
+		minimizeBtn.BackgroundColor3 = Theme.Colors.PanelAlt
+	end)
+	minimizeBtn.MouseLeave:Connect(function()
+		minimizeBtn.BackgroundColor3 = Theme.Colors.Panel
+	end)
+	minimizeBtn.MouseButton1Click:Connect(function()
+		self:setMinimized(true)
+	end)
+	self.minimizeBtn = minimizeBtn
 
 	-- Grid of lobbies
 	local grid = Instance.new("Frame")
@@ -235,7 +291,23 @@ function LobbyUI:_buildCard(index: number, parent: Instance)
 end
 
 function LobbyUI:setVisible(v: boolean)
-	self.root.Visible = v
+	self.visible = v
+	self:_render()
+end
+
+function LobbyUI:setMinimized(m: boolean)
+	self.minimized = m
+	self:_render()
+end
+
+function LobbyUI:toggleMinimized()
+	self:setMinimized(not self.minimized)
+end
+
+function LobbyUI:_render()
+	local showFull = self.visible and not self.minimized
+	self.root.Visible = showFull
+	self.reopenPill.Visible = self.visible and self.minimized
 end
 
 function LobbyUI:updateCoins(amount: number)

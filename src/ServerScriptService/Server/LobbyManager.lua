@@ -7,7 +7,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local GameConfig = require(Shared:WaitForChild("GameConfig"))
 local Remotes = require(Shared:WaitForChild("Remotes"))
 
-local MapGenerator = require(script.Parent.MapGenerator)
+local ArenaResolver = require(script.Parent.ArenaResolver)
 local Lobby = require(script.Parent.Lobby)
 
 local LobbyManager = {}
@@ -33,7 +33,7 @@ local function broadcastAll()
 end
 
 function LobbyManager.init()
-	arenas = MapGenerator.buildAll()
+	arenas = ArenaResolver.resolveAll()
 	for i = 1, GameConfig.NumLobbies do
 		lobbies[i] = Lobby.new(i, arenas[i], broadcastAll)
 	end

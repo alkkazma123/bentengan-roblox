@@ -38,7 +38,7 @@ src/
 │   ├── LobbyManager.lua        # Owns 4 Lobby
 │   ├── Lobby.lua               # State machine per lobby + match
 │   ├── TagSystem.lua           # Tag/jail/base touch detection
-│   ├── MapGenerator.lua        # Bangun 4 arena prosedural
+│   ├── ArenaResolver.lua       # Baca workspace.Arenas.Arena_X (edit manual di Studio)
 │   ├── DataService.lua         # DataStore wrapper
 │   ├── ShopService.lua         # Buy/Equip/Unequip validation
 │   ├── AbilityService.lua      # Efek ability (speed/jump/fly) server-side
@@ -56,18 +56,39 @@ src/
 
 ## Cara Menggunakan (Rojo)
 
-1. Install [Rojo](https://rojo.space/) di komputer kamu (via `aftman install`, `foreman`, `rokit install`, atau binary manual).
+1. Install [Rojo](https://rojo.space/) (via `aftman install`, `rokit install`, atau binary manual).
 2. Install plugin Rojo di Roblox Studio.
-3. Buka folder repo ini di terminal dan jalankan:
+3. Di terminal, jalankan `rojo serve` dari folder repo.
+4. Di Studio, place kosong, klik plugin Rojo → **Connect**.
+5. **Setup arena (sekali saja):**
+   - Buka `tools/SetupArenas.lua`, copy semua isinya
+   - Di Studio: **View → Command Bar**
+   - Paste → Enter
+   - Muncul `workspace.Arenas` dengan Arena_1..Arena_4
+   - **Ctrl+S** untuk save place (supaya arena persisted)
+6. Tekan **F5** / Play.
 
-   ```bash
-   rojo serve
-   ```
+### Edit arena manual
 
-4. Di Roblox Studio, buka place baru (kosong), klik tombol plugin Rojo, lalu **Connect** ke `localhost:34872` (default).
-5. Tekan **F5** / Play untuk menjalankan game. Loading screen akan muncul, lalu rules UI, lalu lobby UI.
+Setelah setup selesai, semua part (base, jail, safe zone, spawn, lobby pad)
+ada sebagai instance persistent di `workspace.Arenas`. Kamu bebas:
 
-> Alternatif: `rojo build -o BentenganGame.rbxlx` untuk membangun file place lalu dibuka manual di Studio.
+- Pindah posisi
+- Ganti ukuran / material / warna
+- Tambah dekorasi (cukup jangan hapus nama part aslinya)
+- Rebuild dari nol: hapus folder `Arenas` → run `SetupArenas.lua` lagi
+
+Server hanya memerlukan **9 child part berikut** di tiap Arena_X:
+`RedSpawn`, `BlueSpawn`, `RedBase`, `BlueBase`, `RedJail`, `BlueJail`,
+`RedSafeZone`, `BlueSafeZone`, `LobbySpawn`.
+
+> `rojo build -o BentenganGame.rbxlx` juga bisa dipakai untuk build file place manual.
+
+## Lobby UI
+
+- Tombol **—** di top bar atau tekan **M** untuk minimize lobby UI → pemain bisa jalan-jalan di lobby pad.
+- Klik pill "OPEN LOBBY [M]" di atas layar atau tekan **M** lagi untuk membuka kembali.
+- BillboardGui (label base/jail/lobby) hanya terlihat dari jarak ≤60 studs.
 
 ## Pengembangan
 
