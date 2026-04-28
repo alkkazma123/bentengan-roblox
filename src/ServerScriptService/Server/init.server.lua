@@ -13,6 +13,8 @@ local AbilityService = require(script.AbilityService)
 local AntiExploit = require(script.AntiExploit)
 local Leaderstats = require(script.Leaderstats)
 local ArenaResolver = require(script.ArenaResolver)
+local OverheadGui = require(script.OverheadGui)
+local LeaderboardBoard = require(script.LeaderboardBoard)
 
 -- Build arenas + lobbies
 LobbyManager.init()
@@ -21,6 +23,8 @@ LobbyManager.init()
 -- default spawn for new characters. Players only get teleported to a lobby's
 -- pad after they click Join, and get teleported back here when they Leave.
 ArenaResolver.ensureWorldSpawn()
+LeaderboardBoard.init(workspace:WaitForChild("Arenas"))
+OverheadGui.init()
 
 Players.CharacterAutoLoads = true
 
