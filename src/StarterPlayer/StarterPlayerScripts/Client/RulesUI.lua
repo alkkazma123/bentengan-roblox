@@ -8,10 +8,21 @@ local RulesText = require(Shared:WaitForChild("RulesText"))
 
 local RulesUI = {}
 
-function RulesUI.show(gui: ScreenGui): Frame
+function RulesUI.show(gui: ScreenGui, onDismiss: (() -> ())?): Frame
 	local existing = gui:FindFirstChild("RulesFrame")
 	if existing and existing:IsA("Frame") then
 		existing.Visible = true
+		if onDismiss then
+			local conn
+			conn = existing:GetPropertyChangedSignal("Visible"):Connect(function()
+				if not existing.Visible then
+					if conn then
+						conn:Disconnect()
+					end
+					onDismiss()
+				end
+			end)
+		end
 		return existing
 	end
 
@@ -25,7 +36,7 @@ function RulesUI.show(gui: ScreenGui): Frame
 	overlay.Parent = gui
 
 	local panel = Instance.new("Frame")
-	panel.Size = UDim2.fromOffset(620, 500)
+	panel.Size = UDim2.new(0.9, 0, 0.9, 0)
 	panel.AnchorPoint = Vector2.new(0.5, 0.5)
 	panel.Position = UDim2.fromScale(0.5, 0.5)
 	panel.BackgroundColor3 = Theme.Colors.Bg
@@ -34,6 +45,11 @@ function RulesUI.show(gui: ScreenGui): Frame
 	panel.Parent = overlay
 	Theme.applyCorner(panel)
 	Theme.applyStroke(panel, Theme.Colors.Stroke, 1)
+
+	local sizeConstraint = Instance.new("UISizeConstraint")
+	sizeConstraint.MaxSize = Vector2.new(640, 520)
+	sizeConstraint.MinSize = Vector2.new(260, 320)
+	sizeConstraint.Parent = panel
 
 	local title = Instance.new("TextLabel")
 	title.Size = UDim2.new(1, -40, 0, 42)
@@ -124,6 +140,9 @@ function RulesUI.show(gui: ScreenGui): Frame
 
 	local function dismiss()
 		overlay.Visible = false
+		if onDismiss then
+			onDismiss()
+		end
 	end
 
 	close.MouseButton1Click:Connect(dismiss)
