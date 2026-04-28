@@ -12,12 +12,16 @@ local LobbyManager = require(script.LobbyManager)
 local AbilityService = require(script.AbilityService)
 local AntiExploit = require(script.AntiExploit)
 local Leaderstats = require(script.Leaderstats)
+local ArenaResolver = require(script.ArenaResolver)
 
 -- Build arenas + lobbies
 LobbyManager.init()
 
--- Prevent players from auto-spawning into a random SpawnLocation before they
--- pick a lobby. We handle spawn placement manually.
+-- Make sure a neutral world SpawnLocation exists; Roblox will use it as the
+-- default spawn for new characters. Players only get teleported to a lobby's
+-- pad after they click Join, and get teleported back here when they Leave.
+ArenaResolver.ensureWorldSpawn()
+
 Players.CharacterAutoLoads = true
 
 local function sendFullSync(player: Player)
@@ -30,25 +34,10 @@ local function onPlayerAdded(player: Player)
 	Leaderstats.attach(player)
 	ShopService.pushUpdate(player)
 
-	player.CharacterAdded:Connect(function(char)
-		-- Default placement: send them to Lobby 1's lobby pad if they haven't joined a lobby.
-		task.wait(0.25)
-		local lobby = LobbyManager.getLobbyOfPlayer(player)
-		if not lobby then
-			local hrp = char:FindFirstChild("HumanoidRootPart")
-			if hrp and hrp:IsA("BasePart") then
-				-- Place at first arena's lobby pad by default (a free floating pad)
-				local arenasFolder = workspace:FindFirstChild("Arenas")
-				local firstArena = arenasFolder and arenasFolder:FindFirstChild("Arena_1")
-				if firstArena then
-					local pad = firstArena:FindFirstChild("LobbySpawn")
-					if pad and pad:IsA("BasePart") then
-						hrp.CFrame = pad.CFrame + Vector3.new(math.random(-6, 6), 5, math.random(-6, 6))
-					end
-				end
-			end
-		end
-	end)
+	-- Roblox auto-spawns the character at the neutral WorldSpawn. If the
+	-- player dies while in a match, the match logic teleports them to a team
+	-- or jail spawn; otherwise they respawn at WorldSpawn, which is what we
+	-- want.
 end
 
 for _, p in ipairs(Players:GetPlayers()) do
