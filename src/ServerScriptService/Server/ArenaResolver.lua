@@ -124,4 +124,26 @@ function ArenaResolver.isReady(): boolean
 	return true
 end
 
+-- Ensure a neutral world spawn exists. Returns the SpawnLocation basepart
+-- players respawn at when not in a match.
+function ArenaResolver.ensureWorldSpawn(): BasePart
+	local folder = ensureFolder()
+	local model = folder:FindFirstChild("WorldSpawn")
+	if not model then
+		-- Also sweep any stray top-level SpawnLocations that Roblox auto-creates
+		-- for new places; we want the neutral lobby pad to be the only one.
+		for _, inst in Workspace:GetChildren() do
+			if inst:IsA("SpawnLocation") then
+				inst:Destroy()
+			end
+		end
+		model = ArenaBuilder.buildWorldSpawn(folder)
+	end
+	local spawnLoc = (model :: Instance):FindFirstChild("SpawnLocation")
+	if not spawnLoc or not spawnLoc:IsA("BasePart") then
+		error("[ArenaResolver] WorldSpawn is missing its SpawnLocation BasePart.")
+	end
+	return spawnLoc
+end
+
 return ArenaResolver
