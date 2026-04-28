@@ -38,7 +38,8 @@ src/
 │   ├── LobbyManager.lua        # Owns 4 Lobby
 │   ├── Lobby.lua               # State machine per lobby + match
 │   ├── TagSystem.lua           # Tag/jail/base touch detection
-│   ├── ArenaResolver.lua       # Baca workspace.Arenas.Arena_X (edit manual di Studio)
+│   ├── ArenaResolver.lua       # Baca (atau auto-build) workspace.Arenas.Arena_X
+│   ├── ArenaBuilder.lua        # Procedural builder, dipakai fallback + SetupArenas
 │   ├── DataService.lua         # DataStore wrapper
 │   ├── ShopService.lua         # Buy/Equip/Unequip validation
 │   ├── AbilityService.lua      # Efek ability (speed/jump/fly) server-side
@@ -60,27 +61,25 @@ src/
 2. Install plugin Rojo di Roblox Studio.
 3. Di terminal, jalankan `rojo serve` dari folder repo.
 4. Di Studio, place kosong, klik plugin Rojo → **Connect**.
-5. **Setup arena (sekali saja):**
-   - Buka `tools/SetupArenas.lua`, copy semua isinya
-   - Di Studio: **View → Command Bar**
-   - Paste → Enter
-   - Muncul `workspace.Arenas` dengan Arena_1..Arena_4
-   - **Ctrl+S** untuk save place (supaya arena persisted)
-6. Tekan **F5** / Play.
+5. Tekan **F5** / Play — kalau `workspace.Arenas` belum ada, server auto-build 4 arena saat start, dan game langsung jalan.
 
-### Edit arena manual
+### Edit arena secara manual (opsional)
 
-Setelah setup selesai, semua part (base, jail, safe zone, spawn, lobby pad)
-ada sebagai instance persistent di `workspace.Arenas`. Kamu bebas:
+Kalau mau arena yang bisa kamu pindah / dekorasi / simpan permanen di place file,
+jalankan sekali saja:
 
-- Pindah posisi
-- Ganti ukuran / material / warna
-- Tambah dekorasi (cukup jangan hapus nama part aslinya)
-- Rebuild dari nol: hapus folder `Arenas` → run `SetupArenas.lua` lagi
+1. Studio di **edit mode** (jangan saat play).
+2. **View → Command Bar**.
+3. Copy isi `tools/SetupArenas.lua` → paste ke Command Bar → Enter.
+4. `Ctrl+S` untuk save place.
 
-Server hanya memerlukan **9 child part berikut** di tiap Arena_X:
+Setelah itu semua part hidup sebagai instance persistent di `workspace.Arenas`
+dan bebas dipindah / diganti ukuran / material / warna. Runtime tidak akan
+regenerate selama 9 child berikut masih ada di tiap Arena_X:
 `RedSpawn`, `BlueSpawn`, `RedBase`, `BlueBase`, `RedJail`, `BlueJail`,
 `RedSafeZone`, `BlueSafeZone`, `LobbySpawn`.
+
+Rebuild dari nol: hapus folder `Arenas` di Studio → F5 (auto-build) atau jalankan `SetupArenas.lua` lagi (build + persist).
 
 > `rojo build -o BentenganGame.rbxlx` juga bisa dipakai untuk build file place manual.
 
