@@ -18,6 +18,7 @@ local ShopUI = require(script:WaitForChild("ShopUI"))
 local HUD = require(script:WaitForChild("HUD"))
 local AbilityController = require(script:WaitForChild("AbilityController"))
 local DashButton = require(script:WaitForChild("DashButton"))
+local DailyRewardsUI = require(script:WaitForChild("DailyRewardsUI"))
 
 local player = Players.LocalPlayer
 
@@ -42,6 +43,7 @@ local shopUI = ShopUI.new(gui)
 local hud = HUD.new(gui)
 local abilityController = AbilityController.new()
 local dashButton = DashButton.new(gui)
+local dailyRewardsUI = DailyRewardsUI.new(gui)
 
 lobbyUI:setVisible(false)
 shopUI:setVisible(false)
@@ -85,6 +87,11 @@ end)
 lobbyUI.rulesBtn.MouseButton1Click:Connect(function()
 	RulesUI.show(gui)
 end)
+if lobbyUI.spinBtn then
+	lobbyUI.spinBtn.MouseButton1Click:Connect(function()
+		dailyRewardsUI:openSpin()
+	end)
+end
 
 -- ========== Routing remotes ==========
 

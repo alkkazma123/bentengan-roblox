@@ -16,6 +16,7 @@ local ArenaResolver = require(script.ArenaResolver)
 local OverheadGui = require(script.OverheadGui)
 local LeaderboardBoard = require(script.LeaderboardBoard)
 local DashService = require(script.DashService)
+local DailyRewards = require(script.DailyRewards)
 
 -- Build arenas + lobbies
 LobbyManager.init()
@@ -29,9 +30,19 @@ OverheadGui.init()
 
 Players.CharacterAutoLoads = true
 
+local function pushDailyRewardsState(player: Player)
+	local loginInfo = DailyRewards.evaluateLogin(player)
+	local spinInfo = DailyRewards.spinState(player)
+	Remotes.DailyRewardsState:FireClient(player, {
+		Login = loginInfo,
+		Spin = spinInfo,
+	})
+end
+
 local function sendFullSync(player: Player)
 	Remotes.LobbyStateUpdate:FireClient(player, LobbyManager.getSnapshot())
 	ShopService.pushUpdate(player)
+	pushDailyRewardsState(player)
 end
 
 local function onPlayerAdded(player: Player)
@@ -144,6 +155,32 @@ Remotes.RequestDash.OnServerEvent:Connect(function(player)
 	if not ok then
 		Remotes.DashFeedback:FireClient(player, { Type = "DashError", Message = err or "Gagal dash" })
 	end
+end)
+
+Remotes.RequestClaimLogin.OnServerEvent:Connect(function(player)
+	if not AntiExploit.allow(player, "ClaimLogin", { 2, 5 }) then
+		return
+	end
+	local granted, info = DailyRewards.claimLogin(player)
+	if granted then
+		Remotes.CoinsUpdate:FireClient(player, DataService.getProfile(player).Coins)
+	end
+	Remotes.DailyRewardsState:FireClient(player, {
+		Login = info,
+		Spin = DailyRewards.spinState(player),
+		Claimed = granted,
+	})
+end)
+
+Remotes.RequestSpin.OnServerEvent:Connect(function(player)
+	if not AntiExploit.allow(player, "Spin", { 2, 5 }) then
+		return
+	end
+	local result = DailyRewards.spin(player)
+	if result.Success then
+		Remotes.CoinsUpdate:FireClient(player, DataService.getProfile(player).Coins)
+	end
+	Remotes.SpinResult:FireClient(player, result)
 end)
 
 Remotes.ClientReady.OnServerEvent:Connect(function(player)

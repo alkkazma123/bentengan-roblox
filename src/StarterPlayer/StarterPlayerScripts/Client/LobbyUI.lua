@@ -99,6 +99,20 @@ function LobbyUI.new(gui: ScreenGui)
 	Theme.applyStroke(coinsLabel, Theme.Colors.Stroke)
 	self.coinsLabel = coinsLabel
 
+	local spinBtn = Instance.new("TextButton")
+	spinBtn.Size = UDim2.fromOffset(110, 40)
+	spinBtn.AnchorPoint = Vector2.new(1, 0.5)
+	spinBtn.Position = UDim2.new(1, -415, 0.5, 0)
+	spinBtn.BackgroundColor3 = Theme.Colors.Gold
+	spinBtn.AutoButtonColor = false
+	spinBtn.Font = Theme.FontBold
+	spinBtn.TextSize = 14
+	spinBtn.TextColor3 = Color3.new(0, 0, 0)
+	spinBtn.Text = "SPIN HARIAN"
+	spinBtn.Parent = topBar
+	Theme.applyCorner(spinBtn, Theme.SmallRadius)
+	self.spinBtn = spinBtn
+
 	local rulesBtn = Instance.new("TextButton")
 	rulesBtn.Size = UDim2.fromOffset(100, 40)
 	rulesBtn.AnchorPoint = Vector2.new(1, 0.5)
