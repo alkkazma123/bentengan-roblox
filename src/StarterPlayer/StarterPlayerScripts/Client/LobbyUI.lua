@@ -85,9 +85,9 @@ function LobbyUI.new(gui: ScreenGui)
 	titleLabel.Parent = topBar
 
 	local coinsLabel = Instance.new("TextLabel")
-	coinsLabel.Size = UDim2.fromOffset(200, 40)
+	coinsLabel.Size = UDim2.fromOffset(170, 40)
 	coinsLabel.AnchorPoint = Vector2.new(1, 0.5)
-	coinsLabel.Position = UDim2.new(1, -415, 0.5, 0)
+	coinsLabel.Position = UDim2.new(1, -540, 0.5, 0)
 	coinsLabel.BackgroundColor3 = Theme.Colors.Panel
 	coinsLabel.Font = Theme.FontBold
 	coinsLabel.TextSize = 16
@@ -98,6 +98,29 @@ function LobbyUI.new(gui: ScreenGui)
 	Theme.applyCorner(coinsLabel, Theme.SmallRadius)
 	Theme.applyStroke(coinsLabel, Theme.Colors.Stroke)
 	self.coinsLabel = coinsLabel
+
+	-- "+" pill tucked inside the coinsLabel itself so we don't blow up the
+	-- topbar layout. Tapping it opens the Robux coin shop.
+	local buyCoinsBtn = Instance.new("TextButton")
+	buyCoinsBtn.Size = UDim2.fromOffset(28, 28)
+	buyCoinsBtn.AnchorPoint = Vector2.new(1, 0.5)
+	buyCoinsBtn.Position = UDim2.new(1, -6, 0.5, 0)
+	buyCoinsBtn.BackgroundColor3 = Theme.Colors.AccentAlt
+	buyCoinsBtn.AutoButtonColor = false
+	buyCoinsBtn.Font = Theme.FontBold
+	buyCoinsBtn.TextSize = 20
+	buyCoinsBtn.TextColor3 = Color3.new(0, 0, 0)
+	buyCoinsBtn.Text = "+"
+	buyCoinsBtn.Parent = coinsLabel
+	Theme.applyCorner(buyCoinsBtn, UDim.new(1, 0))
+	self.buyCoinsBtn = buyCoinsBtn
+
+	-- Make the coin text left-aligned so it doesn't hide behind the "+" pill.
+	coinsLabel.TextXAlignment = Enum.TextXAlignment.Left
+	local coinsPad = Instance.new("UIPadding")
+	coinsPad.PaddingLeft = UDim.new(0, 12)
+	coinsPad.PaddingRight = UDim.new(0, 38)
+	coinsPad.Parent = coinsLabel
 
 	local spinBtn = Instance.new("TextButton")
 	spinBtn.Size = UDim2.fromOffset(110, 40)

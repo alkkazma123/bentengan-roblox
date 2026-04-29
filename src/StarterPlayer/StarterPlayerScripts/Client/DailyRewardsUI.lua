@@ -200,17 +200,6 @@ end
 
 -- ===== Spin wheel =====
 
-local SEGMENT_COLORS = {
-	Color3.fromRGB(120, 170, 255),
-	Color3.fromRGB(90, 220, 180),
-	Color3.fromRGB(250, 205, 100),
-	Color3.fromRGB(230, 120, 200),
-	Color3.fromRGB(120, 170, 255),
-	Color3.fromRGB(90, 220, 180),
-	Color3.fromRGB(250, 205, 100),
-	Color3.fromRGB(230, 120, 200),
-}
-
 local function buildSpinPanel(parent: ScreenGui)
 	local backdrop = Instance.new("Frame")
 	backdrop.Name = "SpinBackdrop"
@@ -282,55 +271,70 @@ local function buildSpinPanel(parent: ScreenGui)
 	wheelHolder.ZIndex = 72
 	wheelHolder.Parent = panel
 
+	local segmentCount = 8
+
+	-- The visible wheel is a circular frame with 8 thin radial spokes that
+	-- divide it into 8 equal-angle slots; each slot has an upright reward
+	-- label. The whole inner group rotates as one when the player spins.
 	local wheel = Instance.new("Frame")
 	wheel.Size = UDim2.fromScale(1, 1)
 	wheel.AnchorPoint = Vector2.new(0.5, 0.5)
 	wheel.Position = UDim2.fromScale(0.5, 0.5)
-	wheel.BackgroundColor3 = Theme.Colors.Bg
+	wheel.BackgroundColor3 = Theme.Colors.PanelAlt
 	wheel.BorderSizePixel = 0
+	wheel.ClipsDescendants = true
 	wheel.ZIndex = 73
 	wheel.Parent = wheelHolder
 	local wheelCorner = Instance.new("UICorner")
 	wheelCorner.CornerRadius = UDim.new(1, 0)
 	wheelCorner.Parent = wheel
-	Theme.applyStroke(wheel, Theme.Colors.Stroke, 2)
+	Theme.applyStroke(wheel, Theme.Colors.Gold, 4)
 
-	-- Build 8 pie segments using triangle frames rotated around the center.
-	-- Each segment is a half-disk colored frame masked by sibling frames; the
-	-- simpler approach used here is 8 thin colored sectors built from 8 ImageLabels
-	-- with rotation.
-	local segmentCount = 8
-	local segLabels = {}
+	-- 8 spoke dividers (gold lines) extending from center to the rim so
+	-- each segment is clearly delimited.
 	for i = 1, segmentCount do
-		local seg = Instance.new("Frame")
-		seg.Size = UDim2.fromScale(0.5, 0.5)
-		seg.AnchorPoint = Vector2.new(0, 1)
-		seg.Position = UDim2.fromScale(0.5, 0.5)
-		seg.BackgroundColor3 = SEGMENT_COLORS[i]
-		seg.BorderSizePixel = 0
-		seg.Rotation = (i - 1) * (360 / segmentCount)
-		seg.ZIndex = 74
-		seg.Parent = wheel
+		local spoke = Instance.new("Frame")
+		spoke.AnchorPoint = Vector2.new(0.5, 1)
+		spoke.Position = UDim2.fromScale(0.5, 0.5)
+		spoke.Size = UDim2.fromOffset(2, 140)
+		spoke.BackgroundColor3 = Theme.Colors.Gold
+		spoke.BorderSizePixel = 0
+		spoke.Rotation = (i - 1) * (360 / segmentCount)
+		spoke.ZIndex = 74
+		spoke.Parent = wheel
+	end
+
+	-- Reward labels positioned at the angular center of each segment, ~70%
+	-- of the radius out from center. Labels keep their orientation pointed
+	-- toward the center so they read radially (looks like a real wheel).
+	local segLabels = {}
+	local radius = 0.32 -- in scale units relative to wheel size
+	for i = 1, segmentCount do
+		local angleDeg = (i - 1) * (360 / segmentCount) + (360 / segmentCount) / 2
+		local angleRad = math.rad(angleDeg)
+		local sx = 0.5 + radius * math.sin(angleRad)
+		local sy = 0.5 - radius * math.cos(angleRad)
 
 		local label = Instance.new("TextLabel")
-		label.Size = UDim2.fromOffset(60, 22)
+		label.Size = UDim2.fromOffset(72, 26)
 		label.AnchorPoint = Vector2.new(0.5, 0.5)
-		-- Place near outer arc midpoint of the sector.
-		label.Position = UDim2.new(0.4, 0, 0.2, 0)
+		label.Position = UDim2.fromScale(sx, sy)
 		label.BackgroundTransparency = 1
 		label.Font = Theme.FontBold
-		label.TextSize = 16
-		label.TextColor3 = Color3.new(0, 0, 0)
+		label.TextSize = 18
+		label.TextColor3 = if i % 2 == 0 then Theme.Colors.Gold else Color3.fromRGB(255, 255, 255)
+		label.TextStrokeTransparency = 0.1
+		label.TextStrokeColor3 = Color3.new(0, 0, 0)
 		label.Text = "★?"
-		label.Rotation = -((i - 1) * (360 / segmentCount)) + (360 / segmentCount) / 2
+		label.Rotation = angleDeg -- text reads radially outward
 		label.ZIndex = 75
-		label.Parent = seg
+		label.Parent = wheel
 		segLabels[i] = label
 	end
 
-	-- Center hub.
+	-- Center hub (sits above the spokes so they're hidden in the middle).
 	local hub = Instance.new("Frame")
-	hub.Size = UDim2.fromOffset(70, 70)
+	hub.Size = UDim2.fromOffset(80, 80)
 	hub.AnchorPoint = Vector2.new(0.5, 0.5)
 	hub.Position = UDim2.fromScale(0.5, 0.5)
 	hub.BackgroundColor3 = Theme.Colors.Bg
@@ -340,7 +344,17 @@ local function buildSpinPanel(parent: ScreenGui)
 	local hubCorner = Instance.new("UICorner")
 	hubCorner.CornerRadius = UDim.new(1, 0)
 	hubCorner.Parent = hub
-	Theme.applyStroke(hub, Theme.Colors.Stroke, 2)
+	Theme.applyStroke(hub, Theme.Colors.Gold, 3)
+
+	local hubLabel = Instance.new("TextLabel")
+	hubLabel.Size = UDim2.fromScale(1, 1)
+	hubLabel.BackgroundTransparency = 1
+	hubLabel.Font = Theme.FontBold
+	hubLabel.TextSize = 20
+	hubLabel.TextColor3 = Theme.Colors.Gold
+	hubLabel.Text = "★"
+	hubLabel.ZIndex = 77
+	hubLabel.Parent = hub
 
 	-- Pointer (triangle arrow at top of wheel).
 	local pointer = Instance.new("TextLabel")

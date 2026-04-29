@@ -19,8 +19,11 @@ function DashButton.new(gui: ScreenGui)
 	local btn = Instance.new("TextButton")
 	btn.Name = "DashButton"
 	btn.Size = UDim2.fromOffset(86, 86)
-	btn.AnchorPoint = Vector2.new(1, 1)
-	btn.Position = UDim2.new(1, -20, 1, -120)
+	-- Anchor on the right edge, vertically centered slightly below middle.
+	-- This keeps the button in the thumb arc on phones (well above the jump
+	-- button) and out of the way of the topbar / leaderboard on PC.
+	btn.AnchorPoint = Vector2.new(1, 0.5)
+	btn.Position = UDim2.new(1, -20, 0.5, 60)
 	btn.BackgroundColor3 = Theme.Colors.Accent
 	btn.AutoButtonColor = false
 	btn.Font = Theme.FontBold
