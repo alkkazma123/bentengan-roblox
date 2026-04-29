@@ -38,6 +38,9 @@ local EVENTS = {
 	"SpinResult", -- server -> client (segment landed + reward)
 	"RequestCoinPurchase", -- client -> server (player clicked Buy on a coin pack)
 	"CoinShopCatalog", -- server -> client (list of coin packs available)
+	"RequestSetTitle", -- client -> server (player wants to apply a new title)
+	"TitleState", -- server -> client (current title + cooldown info)
+	"TitleResult", -- server -> client (response after RequestSetTitle)
 	-- Leaderboard
 	"LeaderboardUpdate",
 }

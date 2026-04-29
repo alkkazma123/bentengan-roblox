@@ -22,6 +22,9 @@ export type Profile = {
 	LastLoginAt: number,
 	LoginStreak: number,
 	LastSpinAt: number,
+	-- Custom title shown above the player's head.
+	Title: string,
+	LastTitleChangeAt: number,
 }
 
 local PROFILE_STORE_NAME = "BentenganProfile_v1"
@@ -49,6 +52,8 @@ local function defaultProfile(): Profile
 		LastLoginAt = 0,
 		LoginStreak = 0,
 		LastSpinAt = 0,
+		Title = "",
+		LastTitleChangeAt = 0,
 	}
 end
 
@@ -62,6 +67,10 @@ function DataService.getProfile(player: Player): Profile
 		return p
 	end
 	return defaultProfile()
+end
+
+function DataService.isLoaded(player: Player): boolean
+	return profiles[player] ~= nil
 end
 
 function DataService.load(player: Player)

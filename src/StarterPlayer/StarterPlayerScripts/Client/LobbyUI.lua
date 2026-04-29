@@ -85,9 +85,9 @@ function LobbyUI.new(gui: ScreenGui)
 	titleLabel.Parent = topBar
 
 	local coinsLabel = Instance.new("TextLabel")
-	coinsLabel.Size = UDim2.fromOffset(170, 40)
+	coinsLabel.Size = UDim2.fromOffset(160, 40)
 	coinsLabel.AnchorPoint = Vector2.new(1, 0.5)
-	coinsLabel.Position = UDim2.new(1, -540, 0.5, 0)
+	coinsLabel.Position = UDim2.new(1, -625, 0.5, 0)
 	coinsLabel.BackgroundColor3 = Theme.Colors.Panel
 	coinsLabel.Font = Theme.FontBold
 	coinsLabel.TextSize = 16
@@ -123,18 +123,32 @@ function LobbyUI.new(gui: ScreenGui)
 	coinsPad.Parent = coinsLabel
 
 	local spinBtn = Instance.new("TextButton")
-	spinBtn.Size = UDim2.fromOffset(110, 40)
+	spinBtn.Size = UDim2.fromOffset(95, 40)
 	spinBtn.AnchorPoint = Vector2.new(1, 0.5)
 	spinBtn.Position = UDim2.new(1, -415, 0.5, 0)
 	spinBtn.BackgroundColor3 = Theme.Colors.Gold
 	spinBtn.AutoButtonColor = false
 	spinBtn.Font = Theme.FontBold
-	spinBtn.TextSize = 14
+	spinBtn.TextSize = 13
 	spinBtn.TextColor3 = Color3.new(0, 0, 0)
-	spinBtn.Text = "SPIN HARIAN"
+	spinBtn.Text = "SPIN"
 	spinBtn.Parent = topBar
 	Theme.applyCorner(spinBtn, Theme.SmallRadius)
 	self.spinBtn = spinBtn
+
+	local titleBtn = Instance.new("TextButton")
+	titleBtn.Size = UDim2.fromOffset(95, 40)
+	titleBtn.AnchorPoint = Vector2.new(1, 0.5)
+	titleBtn.Position = UDim2.new(1, -515, 0.5, 0)
+	titleBtn.BackgroundColor3 = Theme.Colors.AccentAlt
+	titleBtn.AutoButtonColor = false
+	titleBtn.Font = Theme.FontBold
+	titleBtn.TextSize = 13
+	titleBtn.TextColor3 = Color3.new(0, 0, 0)
+	titleBtn.Text = "TITLE"
+	titleBtn.Parent = topBar
+	Theme.applyCorner(titleBtn, Theme.SmallRadius)
+	self.titleBtn = titleBtn
 
 	local rulesBtn = Instance.new("TextButton")
 	rulesBtn.Size = UDim2.fromOffset(100, 40)
