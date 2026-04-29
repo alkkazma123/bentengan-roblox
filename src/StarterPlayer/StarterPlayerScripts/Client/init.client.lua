@@ -9,6 +9,7 @@ local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Remotes = require(Shared:WaitForChild("Remotes"))
+local Theme = require(Shared:WaitForChild("Theme"))
 
 local LoadingUI = require(script:WaitForChild("LoadingUI"))
 local RulesUI = require(script:WaitForChild("RulesUI"))
@@ -16,6 +17,7 @@ local LobbyUI = require(script:WaitForChild("LobbyUI"))
 local ShopUI = require(script:WaitForChild("ShopUI"))
 local HUD = require(script:WaitForChild("HUD"))
 local AbilityController = require(script:WaitForChild("AbilityController"))
+local DashButton = require(script:WaitForChild("DashButton"))
 
 local player = Players.LocalPlayer
 
@@ -31,14 +33,20 @@ gui.IgnoreGuiInset = true
 gui.DisplayOrder = 10
 gui.Parent = player:WaitForChild("PlayerGui")
 
--- Create UI controllers (they start hidden where needed)
+-- Responsive scaling for mobile / tablet / large monitors.
+Theme.attachAutoScale(gui)
+
+-- Create UI controllers (start hidden; we reveal lobby only after rules close)
 local lobbyUI = LobbyUI.new(gui)
 local shopUI = ShopUI.new(gui)
 local hud = HUD.new(gui)
 local abilityController = AbilityController.new()
+local dashButton = DashButton.new(gui)
 
 lobbyUI:setVisible(false)
+shopUI:setVisible(false)
 hud:setVisible(false)
+dashButton:setVisible(false)
 
 -- Loading flow: wait for first LobbyStateUpdate from server as a real sync step.
 local firstStateReceived = false
@@ -63,9 +71,12 @@ LoadingUI.run(gui, {
 	end,
 })
 
--- Show rules overlay, then lobby UI.
-RulesUI.show(gui)
-lobbyUI:setVisible(true)
+-- Show rules overlay. Lobby UI only appears after the player closes rules,
+-- so the very first moment after loading isn't cluttered.
+RulesUI.show(gui, function()
+	lobbyUI:setVisible(true)
+	dashButton:setVisible(true)
+end)
 
 -- Hook buttons on the top bar
 lobbyUI.shopBtn.MouseButton1Click:Connect(function()

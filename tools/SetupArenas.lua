@@ -217,8 +217,67 @@ local function buildArena(index)
 	print(string.format("[SetupArenas] Built Arena_%d at %s", index, tostring(origin)))
 end
 
+local function buildWorldSpawn()
+	local model = Instance.new("Model")
+	model.Name = "WorldSpawn"
+	model.Parent = arenasFolder
+
+	local origin = Vector3.new(0, 80, -320)
+
+	local floor = makePart({
+		Name = "Floor",
+		Size = Vector3.new(80, 2, 80),
+		CFrame = CFrame.new(origin),
+		Color = Color3.fromRGB(46, 52, 68),
+		Material = Enum.Material.SmoothPlastic,
+	})
+	floor.Parent = model
+
+	local rim = makePart({
+		Name = "Rim",
+		Size = Vector3.new(82, 1, 82),
+		CFrame = CFrame.new(origin + Vector3.new(0, -1, 0)),
+		Color = Color3.fromRGB(120, 170, 255),
+		Material = Enum.Material.Neon,
+		Transparency = 0.5,
+	})
+	rim.Parent = model
+
+	local spawnLoc = Instance.new("SpawnLocation")
+	spawnLoc.Name = "SpawnLocation"
+	spawnLoc.Size = Vector3.new(12, 1, 12)
+	spawnLoc.CFrame = CFrame.new(origin + Vector3.new(0, 1.5, 0))
+	spawnLoc.Anchored = true
+	spawnLoc.CanCollide = true
+	spawnLoc.Color = Color3.fromRGB(120, 170, 255)
+	spawnLoc.Material = Enum.Material.Neon
+	spawnLoc.TopSurface = Enum.SurfaceType.Smooth
+	spawnLoc.BottomSurface = Enum.SurfaceType.Smooth
+	spawnLoc.AllowTeamChangeOnTouch = false
+	spawnLoc.Neutral = true
+	spawnLoc.Parent = model
+
+	label(spawnLoc, "BENTENGAN LOBBY", Color3.fromRGB(255, 255, 255))
+
+	print(string.format("[SetupArenas] Built WorldSpawn at %s", tostring(origin)))
+end
+
+-- Remove stray top-level SpawnLocations Roblox auto-creates in new places so
+-- the neutral WorldSpawn is the only spawn point.
+for _, inst in ipairs(Workspace:GetChildren()) do
+	if inst:IsA("SpawnLocation") then
+		inst:Destroy()
+	end
+end
+
 for i = 1, NUM_ARENAS do
 	buildArena(i)
 end
+buildWorldSpawn()
 
-print(string.format("[SetupArenas] Done! Created %d arenas in workspace.Arenas. Press Ctrl+S to save.", NUM_ARENAS))
+print(
+	string.format(
+		"[SetupArenas] Done! Created %d arenas + WorldSpawn in workspace.Arenas. Press Ctrl+S to save.",
+		NUM_ARENAS
+	)
+)
