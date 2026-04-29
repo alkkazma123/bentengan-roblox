@@ -90,6 +90,12 @@ function CoinShop.processReceipt(info)
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 
+	if not DataService.isLoaded(player) then
+		-- Profile not yet loaded (race during join). Defer so we don't
+		-- silently no-op the addCoins call below; Roblox will retry.
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+
 	-- Grant coins through the canonical path so leaderstats/CoinsUpdate fire.
 	DataService.addCoins(player, product.Coins)
 	-- Persist immediately so a crash doesn't lose the purchase.

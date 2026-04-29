@@ -53,8 +53,10 @@ export type SpinInfo = {
 	Segments: { number },
 }
 
--- Compute (and update profile with) the current login bonus. Returns info that
--- the client can use to decide whether to show the popup.
+-- Pure read: figure out what claim state the player is in WITHOUT mutating
+-- the profile. Decides what reward they would get if they pressed Claim now,
+-- and whether they've already claimed today. We base "today" on the
+-- LastLoginAt timestamp, which is only ever written by claimLogin().
 function DailyRewards.evaluateLogin(player: Player): LoginInfo
 	local profile = DataService.getProfile(player)
 	local now = os.time()
@@ -62,42 +64,46 @@ function DailyRewards.evaluateLogin(player: Player): LoginInfo
 	local lastDay = dayIndex(last)
 	local nowDay = dayIndex(now)
 
-	if nowDay == lastDay and last ~= 0 then
-		-- Same UTC day; nothing new to claim.
+	if last ~= 0 and nowDay == lastDay then
+		-- Already claimed today; show their current streak unchanged.
 		return {
-			Streak = profile.LoginStreak,
-			Reward = streakReward(profile.LoginStreak),
+			Streak = math.max(1, profile.LoginStreak),
+			Reward = streakReward(math.max(1, profile.LoginStreak)),
 			AlreadyClaimedToday = true,
 		}
 	end
 
+	-- Predict what the streak will be if they claim now.
+	local nextStreak: number
 	if last == 0 or (nowDay - lastDay) > 1 then
-		-- First-ever login OR missed at least one day: streak resets to 1.
-		profile.LoginStreak = 1
+		nextStreak = 1
 	else
-		-- Next consecutive day: streak continues.
-		profile.LoginStreak = math.max(1, profile.LoginStreak) + 1
+		nextStreak = math.max(1, profile.LoginStreak) + 1
 	end
-	profile.LastLoginAt = now
 
 	return {
-		Streak = profile.LoginStreak,
-		Reward = streakReward(profile.LoginStreak),
+		Streak = nextStreak,
+		Reward = streakReward(nextStreak),
 		AlreadyClaimedToday = false,
 	}
 end
 
--- Pay out the current day's login bonus. Idempotent within the same UTC day.
+-- Pay out the current day's login bonus and write the new state. Idempotent
+-- within the same UTC day (subsequent calls return false).
 function DailyRewards.claimLogin(player: Player): (boolean, LoginInfo)
 	local info = DailyRewards.evaluateLogin(player)
 	if info.AlreadyClaimedToday then
 		return false, info
 	end
+	local profile = DataService.getProfile(player)
+	profile.LoginStreak = info.Streak
+	profile.LastLoginAt = os.time()
 	DataService.addCoins(player, info.Reward)
-	-- Mark as claimed-for-today by re-evaluating after the credit.
-	local after = DailyRewards.evaluateLogin(player)
-	after.Reward = info.Reward
-	return true, after
+	return true, {
+		Streak = info.Streak,
+		Reward = info.Reward,
+		AlreadyClaimedToday = true,
+	}
 end
 
 -- Returns whether the player can spin right now and when the next spin opens.
