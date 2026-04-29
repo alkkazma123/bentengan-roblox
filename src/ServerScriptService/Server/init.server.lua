@@ -12,17 +12,37 @@ local LobbyManager = require(script.LobbyManager)
 local AbilityService = require(script.AbilityService)
 local AntiExploit = require(script.AntiExploit)
 local Leaderstats = require(script.Leaderstats)
+local ArenaResolver = require(script.ArenaResolver)
+local OverheadGui = require(script.OverheadGui)
+local LeaderboardBoard = require(script.LeaderboardBoard)
+local DashService = require(script.DashService)
+local DailyRewards = require(script.DailyRewards)
 
 -- Build arenas + lobbies
 LobbyManager.init()
 
--- Prevent players from auto-spawning into a random SpawnLocation before they
--- pick a lobby. We handle spawn placement manually.
+-- Make sure a neutral world SpawnLocation exists; Roblox will use it as the
+-- default spawn for new characters. Players only get teleported to a lobby's
+-- pad after they click Join, and get teleported back here when they Leave.
+ArenaResolver.ensureWorldSpawn()
+LeaderboardBoard.init(workspace:WaitForChild("Arenas"))
+OverheadGui.init()
+
 Players.CharacterAutoLoads = true
+
+local function pushDailyRewardsState(player: Player)
+	local loginInfo = DailyRewards.evaluateLogin(player)
+	local spinInfo = DailyRewards.spinState(player)
+	Remotes.DailyRewardsState:FireClient(player, {
+		Login = loginInfo,
+		Spin = spinInfo,
+	})
+end
 
 local function sendFullSync(player: Player)
 	Remotes.LobbyStateUpdate:FireClient(player, LobbyManager.getSnapshot())
 	ShopService.pushUpdate(player)
+	pushDailyRewardsState(player)
 end
 
 local function onPlayerAdded(player: Player)
@@ -30,25 +50,10 @@ local function onPlayerAdded(player: Player)
 	Leaderstats.attach(player)
 	ShopService.pushUpdate(player)
 
-	player.CharacterAdded:Connect(function(char)
-		-- Default placement: send them to Lobby 1's lobby pad if they haven't joined a lobby.
-		task.wait(0.25)
-		local lobby = LobbyManager.getLobbyOfPlayer(player)
-		if not lobby then
-			local hrp = char:FindFirstChild("HumanoidRootPart")
-			if hrp and hrp:IsA("BasePart") then
-				-- Place at first arena's lobby pad by default (a free floating pad)
-				local arenasFolder = workspace:FindFirstChild("Arenas")
-				local firstArena = arenasFolder and arenasFolder:FindFirstChild("Arena_1")
-				if firstArena then
-					local pad = firstArena:FindFirstChild("LobbySpawn")
-					if pad and pad:IsA("BasePart") then
-						hrp.CFrame = pad.CFrame + Vector3.new(math.random(-6, 6), 5, math.random(-6, 6))
-					end
-				end
-			end
-		end
-	end)
+	-- Roblox auto-spawns the character at the neutral WorldSpawn. If the
+	-- player dies while in a match, the match logic teleports them to a team
+	-- or jail spawn; otherwise they respawn at WorldSpawn, which is what we
+	-- want.
 end
 
 for _, p in ipairs(Players:GetPlayers()) do
@@ -140,6 +145,42 @@ Remotes.AbilityActivate.OnServerEvent:Connect(function(player, abilityId)
 			Remotes.AbilityFeedback:FireClient(player, { Type = "AbilityError", Message = err or "Gagal aktifkan" })
 		end
 	end
+end)
+
+Remotes.RequestDash.OnServerEvent:Connect(function(player)
+	if not AntiExploit.allow(player, "Dash", { 3, 1 }) then
+		return
+	end
+	local ok, err = DashService.requestDash(player)
+	if not ok then
+		Remotes.DashFeedback:FireClient(player, { Type = "DashError", Message = err or "Gagal dash" })
+	end
+end)
+
+Remotes.RequestClaimLogin.OnServerEvent:Connect(function(player)
+	if not AntiExploit.allow(player, "ClaimLogin", { 2, 5 }) then
+		return
+	end
+	local granted, info = DailyRewards.claimLogin(player)
+	if granted then
+		Remotes.CoinsUpdate:FireClient(player, DataService.getProfile(player).Coins)
+	end
+	Remotes.DailyRewardsState:FireClient(player, {
+		Login = info,
+		Spin = DailyRewards.spinState(player),
+		Claimed = granted,
+	})
+end)
+
+Remotes.RequestSpin.OnServerEvent:Connect(function(player)
+	if not AntiExploit.allow(player, "Spin", { 2, 5 }) then
+		return
+	end
+	local result = DailyRewards.spin(player)
+	if result.Success then
+		Remotes.CoinsUpdate:FireClient(player, DataService.getProfile(player).Coins)
+	end
+	Remotes.SpinResult:FireClient(player, result)
 end)
 
 Remotes.ClientReady.OnServerEvent:Connect(function(player)

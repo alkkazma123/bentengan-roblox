@@ -30,6 +30,12 @@ local EVENTS = {
 	"TagEvent", -- server -> broadcast tag info (for sfx/hud)
 	"JailUpdate",
 	"TeamAssigned",
+	"RequestDash", -- client -> server (L-Shift / Dash button)
+	"DashFeedback", -- server -> client (dash cooldown sync)
+	"DailyRewardsState", -- server -> client (login info + spin state on join)
+	"RequestClaimLogin", -- client -> server (player clicked "Claim" on login popup)
+	"RequestSpin", -- client -> server (player clicked "Spin")
+	"SpinResult", -- server -> client (segment landed + reward)
 	-- Leaderboard
 	"LeaderboardUpdate",
 }

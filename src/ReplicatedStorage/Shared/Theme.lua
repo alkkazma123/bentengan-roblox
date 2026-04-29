@@ -53,4 +53,47 @@ function Theme.applyPadding(inst: GuiObject, px: number): UIPadding
 	return p
 end
 
+-- Attach a UIScale to the ScreenGui that responds to viewport size so UIs
+-- shrink gracefully on small screens (tablets, phones) and expand modestly on
+-- large monitors. Designed around a 1280px reference width.
+function Theme.attachAutoScale(gui: ScreenGui): UIScale
+	local scale = gui:FindFirstChildOfClass("UIScale")
+	if not scale then
+		scale = Instance.new("UIScale")
+		scale.Parent = gui
+	end
+
+	local function update()
+		local cam = workspace.CurrentCamera
+		if not cam then
+			return
+		end
+		local vp = cam.ViewportSize
+		if vp.X <= 0 or vp.Y <= 0 then
+			return
+		end
+		local widthScale = vp.X / 1280
+		local heightScale = vp.Y / 720
+		local s = math.min(widthScale, heightScale)
+		-- Clamp to keep UI legible on very small / very large screens.
+		s = math.clamp(s, 0.55, 1.25)
+		scale.Scale = s
+	end
+
+	update()
+	local cam = workspace.CurrentCamera
+	if cam then
+		cam:GetPropertyChangedSignal("ViewportSize"):Connect(update)
+	end
+	workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
+		local newCam = workspace.CurrentCamera
+		if newCam then
+			newCam:GetPropertyChangedSignal("ViewportSize"):Connect(update)
+		end
+		update()
+	end)
+
+	return scale
+end
+
 return Theme
