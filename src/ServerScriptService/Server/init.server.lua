@@ -15,6 +15,7 @@ local Leaderstats = require(script.Leaderstats)
 local ArenaResolver = require(script.ArenaResolver)
 local OverheadGui = require(script.OverheadGui)
 local LeaderboardBoard = require(script.LeaderboardBoard)
+local DashService = require(script.DashService)
 
 -- Build arenas + lobbies
 LobbyManager.init()
@@ -132,6 +133,16 @@ Remotes.AbilityActivate.OnServerEvent:Connect(function(player, abilityId)
 		if not ok then
 			Remotes.AbilityFeedback:FireClient(player, { Type = "AbilityError", Message = err or "Gagal aktifkan" })
 		end
+	end
+end)
+
+Remotes.RequestDash.OnServerEvent:Connect(function(player)
+	if not AntiExploit.allow(player, "Dash", { 3, 1 }) then
+		return
+	end
+	local ok, err = DashService.requestDash(player)
+	if not ok then
+		Remotes.DashFeedback:FireClient(player, { Type = "DashError", Message = err or "Gagal dash" })
 	end
 end)
 

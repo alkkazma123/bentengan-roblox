@@ -17,6 +17,7 @@ local LobbyUI = require(script:WaitForChild("LobbyUI"))
 local ShopUI = require(script:WaitForChild("ShopUI"))
 local HUD = require(script:WaitForChild("HUD"))
 local AbilityController = require(script:WaitForChild("AbilityController"))
+local DashButton = require(script:WaitForChild("DashButton"))
 
 local player = Players.LocalPlayer
 
@@ -40,10 +41,12 @@ local lobbyUI = LobbyUI.new(gui)
 local shopUI = ShopUI.new(gui)
 local hud = HUD.new(gui)
 local abilityController = AbilityController.new()
+local dashButton = DashButton.new(gui)
 
 lobbyUI:setVisible(false)
 shopUI:setVisible(false)
 hud:setVisible(false)
+dashButton:setVisible(false)
 
 -- Loading flow: wait for first LobbyStateUpdate from server as a real sync step.
 local firstStateReceived = false
@@ -72,6 +75,7 @@ LoadingUI.run(gui, {
 -- so the very first moment after loading isn't cluttered.
 RulesUI.show(gui, function()
 	lobbyUI:setVisible(true)
+	dashButton:setVisible(true)
 end)
 
 -- Hook buttons on the top bar

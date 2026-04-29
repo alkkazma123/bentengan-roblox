@@ -80,7 +80,8 @@ local function buildBoard(parent: Instance): (SurfaceGui, Frame)
 	stand.Color = Color3.fromRGB(24, 28, 36)
 	stand.Size = Vector3.new(16, 14, 1)
 	-- Place next to the world spawn pad (origin of WorldSpawn is 0,80,-320).
-	stand.CFrame = CFrame.new(Vector3.new(-30, 87, -320)) * CFrame.Angles(0, math.rad(90), 0)
+	-- Rotated 180 deg vs. previous build so the front face points at the pad.
+	stand.CFrame = CFrame.new(Vector3.new(-30, 87, -320)) * CFrame.Angles(0, math.rad(-90), 0)
 	stand.Parent = parent
 
 	local frame = Instance.new("Part")

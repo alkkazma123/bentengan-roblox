@@ -30,6 +30,8 @@ local EVENTS = {
 	"TagEvent", -- server -> broadcast tag info (for sfx/hud)
 	"JailUpdate",
 	"TeamAssigned",
+	"RequestDash", -- client -> server (L-Shift / Dash button)
+	"DashFeedback", -- server -> client (dash cooldown sync)
 	-- Leaderboard
 	"LeaderboardUpdate",
 }
