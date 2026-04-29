@@ -36,6 +36,8 @@ local EVENTS = {
 	"RequestClaimLogin", -- client -> server (player clicked "Claim" on login popup)
 	"RequestSpin", -- client -> server (player clicked "Spin")
 	"SpinResult", -- server -> client (segment landed + reward)
+	"RequestCoinPurchase", -- client -> server (player clicked Buy on a coin pack)
+	"CoinShopCatalog", -- server -> client (list of coin packs available)
 	-- Leaderboard
 	"LeaderboardUpdate",
 }

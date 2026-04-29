@@ -17,6 +17,8 @@ local OverheadGui = require(script.OverheadGui)
 local LeaderboardBoard = require(script.LeaderboardBoard)
 local DashService = require(script.DashService)
 local DailyRewards = require(script.DailyRewards)
+local CoinShop = require(script.CoinShop)
+local MarketplaceService = game:GetService("MarketplaceService")
 
 -- Build arenas + lobbies
 LobbyManager.init()
@@ -43,7 +45,10 @@ local function sendFullSync(player: Player)
 	Remotes.LobbyStateUpdate:FireClient(player, LobbyManager.getSnapshot())
 	ShopService.pushUpdate(player)
 	pushDailyRewardsState(player)
+	Remotes.CoinShopCatalog:FireClient(player, CoinShop.getCatalog())
 end
+
+MarketplaceService.ProcessReceipt = CoinShop.processReceipt
 
 local function onPlayerAdded(player: Player)
 	DataService.load(player)
@@ -170,6 +175,16 @@ Remotes.RequestClaimLogin.OnServerEvent:Connect(function(player)
 		Spin = DailyRewards.spinState(player),
 		Claimed = granted,
 	})
+end)
+
+Remotes.RequestCoinPurchase.OnServerEvent:Connect(function(player, productId)
+	if not AntiExploit.allow(player, "CoinPurchase", { 4, 4 }) then
+		return
+	end
+	if type(productId) ~= "number" then
+		return
+	end
+	CoinShop.promptPurchase(player, productId)
 end)
 
 Remotes.RequestSpin.OnServerEvent:Connect(function(player)
