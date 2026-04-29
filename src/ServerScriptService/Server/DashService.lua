@@ -40,6 +40,18 @@ local function applyDash(player: Player)
 	if humanoid.WalkSpeed <= 0.01 then
 		return false
 	end
+	-- Refuse if the character is in a state that shouldn't move (ragdoll,
+	-- seated, climbing, swimming, dead). LinearVelocity on a seated humanoid
+	-- can launch them weirdly; better to just no-op.
+	local state = humanoid:GetState()
+	if
+		state == Enum.HumanoidStateType.Dead
+		or state == Enum.HumanoidStateType.Seated
+		or state == Enum.HumanoidStateType.PlatformStanding
+		or state == Enum.HumanoidStateType.Ragdoll
+	then
+		return false
+	end
 
 	local lookVec = hrp.CFrame.LookVector
 	local direction = Vector3.new(lookVec.X, 0, lookVec.Z)

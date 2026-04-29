@@ -20,6 +20,7 @@ local AbilityController = require(script:WaitForChild("AbilityController"))
 local DashButton = require(script:WaitForChild("DashButton"))
 local DailyRewardsUI = require(script:WaitForChild("DailyRewardsUI"))
 local CoinShopUI = require(script:WaitForChild("CoinShopUI"))
+local TitleUI = require(script:WaitForChild("TitleUI"))
 
 local player = Players.LocalPlayer
 
@@ -46,6 +47,7 @@ local abilityController = AbilityController.new()
 local dashButton = DashButton.new(gui)
 local dailyRewardsUI = DailyRewardsUI.new(gui)
 local coinShopUI = CoinShopUI.new(gui)
+local titleUI = TitleUI.new(gui)
 
 lobbyUI:setVisible(false)
 shopUI:setVisible(false)
@@ -97,6 +99,11 @@ end
 if lobbyUI.buyCoinsBtn then
 	lobbyUI.buyCoinsBtn.MouseButton1Click:Connect(function()
 		coinShopUI:open()
+	end)
+end
+if lobbyUI.titleBtn then
+	lobbyUI.titleBtn.MouseButton1Click:Connect(function()
+		titleUI:open()
 	end)
 end
 

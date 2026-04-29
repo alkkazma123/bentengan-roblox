@@ -18,6 +18,7 @@ local LeaderboardBoard = require(script.LeaderboardBoard)
 local DashService = require(script.DashService)
 local DailyRewards = require(script.DailyRewards)
 local CoinShop = require(script.CoinShop)
+local TitleService = require(script.TitleService)
 local MarketplaceService = game:GetService("MarketplaceService")
 
 -- Build arenas + lobbies
@@ -46,6 +47,7 @@ local function sendFullSync(player: Player)
 	ShopService.pushUpdate(player)
 	pushDailyRewardsState(player)
 	Remotes.CoinShopCatalog:FireClient(player, CoinShop.getCatalog())
+	Remotes.TitleState:FireClient(player, TitleService.getState(player))
 end
 
 MarketplaceService.ProcessReceipt = CoinShop.processReceipt
@@ -185,6 +187,15 @@ Remotes.RequestCoinPurchase.OnServerEvent:Connect(function(player, productId)
 		return
 	end
 	CoinShop.promptPurchase(player, productId)
+end)
+
+Remotes.RequestSetTitle.OnServerEvent:Connect(function(player, requested)
+	if not AntiExploit.allow(player, "SetTitle", { 2, 5 }) then
+		return
+	end
+	local result = TitleService.setTitle(player, requested)
+	Remotes.TitleResult:FireClient(player, result)
+	Remotes.TitleState:FireClient(player, result.State)
 end)
 
 Remotes.RequestSpin.OnServerEvent:Connect(function(player)
