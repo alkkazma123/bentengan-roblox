@@ -53,6 +53,53 @@ function ArenaBuilder.originFor(index: number): Vector3
 	return Vector3.new((index - 1) * ARENA_SPACING, 50, 0)
 end
 
+-- Neutral waiting area where players spawn before they pick a lobby. Placed
+-- away from the arenas so neither lobby nor match traffic interferes.
+function ArenaBuilder.buildWorldSpawn(parent: Instance): Model
+	local model = Instance.new("Model")
+	model.Name = "WorldSpawn"
+
+	local origin = Vector3.new(0, 80, -320)
+
+	local floor = makePart({
+		Name = "Floor",
+		Size = Vector3.new(80, 2, 80),
+		CFrame = CFrame.new(origin),
+		Color = Color3.fromRGB(46, 52, 68),
+		Material = Enum.Material.SmoothPlastic,
+	})
+	floor.Parent = model
+
+	local rim = makePart({
+		Name = "Rim",
+		Size = Vector3.new(82, 1, 82),
+		CFrame = CFrame.new(origin + Vector3.new(0, -1, 0)),
+		Color = Color3.fromRGB(120, 170, 255),
+		Material = Enum.Material.Neon,
+		Transparency = 0.5,
+	})
+	rim.Parent = model
+
+	local spawnLoc = Instance.new("SpawnLocation")
+	spawnLoc.Name = "SpawnLocation"
+	spawnLoc.Size = Vector3.new(12, 1, 12)
+	spawnLoc.CFrame = CFrame.new(origin + Vector3.new(0, 1.5, 0))
+	spawnLoc.Anchored = true
+	spawnLoc.CanCollide = true
+	spawnLoc.Color = Color3.fromRGB(120, 170, 255)
+	spawnLoc.Material = Enum.Material.Neon
+	spawnLoc.TopSurface = Enum.SurfaceType.Smooth
+	spawnLoc.BottomSurface = Enum.SurfaceType.Smooth
+	spawnLoc.AllowTeamChangeOnTouch = false
+	spawnLoc.Neutral = true
+	spawnLoc.Parent = model
+
+	addLabel(spawnLoc, "BENTENGAN LOBBY", Color3.fromRGB(255, 255, 255))
+
+	model.Parent = parent
+	return model
+end
+
 function ArenaBuilder.build(index: number, parent: Instance): Model
 	local origin = ArenaBuilder.originFor(index)
 	local model = Instance.new("Model")

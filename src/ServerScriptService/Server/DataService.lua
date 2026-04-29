@@ -18,6 +18,10 @@ export type Profile = {
 	Deaths: number,
 	OwnedAbilities: { [string]: boolean },
 	EquippedAbilities: { string },
+	-- Daily login bonus / spin tracking. All times are os.time() (UTC seconds).
+	LastLoginAt: number,
+	LoginStreak: number,
+	LastSpinAt: number,
 }
 
 local PROFILE_STORE_NAME = "BentenganProfile_v1"
@@ -42,6 +46,9 @@ local function defaultProfile(): Profile
 		Deaths = 0,
 		OwnedAbilities = {},
 		EquippedAbilities = {},
+		LastLoginAt = 0,
+		LoginStreak = 0,
+		LastSpinAt = 0,
 	}
 end
 
