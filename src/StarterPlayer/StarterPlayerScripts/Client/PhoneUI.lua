@@ -126,8 +126,8 @@ function PhoneUI.Init()
 	toggle.Position = UDim2.new(0.5, -22, 0, 2)
 	toggle.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
 	toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
-	toggle.Text = "TEL"
-	toggle.TextSize = 11
+	toggle.Text = "\u{1F4F1}"
+	toggle.TextSize = 20
 	toggle.Font = Enum.Font.GothamBold
 	toggle.Parent = screenGui
 	toggle.ZIndex = 10

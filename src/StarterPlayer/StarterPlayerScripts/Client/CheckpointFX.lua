@@ -144,6 +144,7 @@ function CheckpointFX.Init()
 
 	SummitReached.OnClientEvent:Connect(function(totalSummits)
 		screenShake()
+		playSound()
 		showNotification(SummitConfig.CelebrationMessage .. " (" .. totalSummits .. ")", Color3.fromRGB(255, 215, 0))
 	end)
 

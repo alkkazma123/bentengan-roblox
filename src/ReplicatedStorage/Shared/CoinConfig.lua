@@ -5,7 +5,7 @@
 
 local CoinConfig = {}
 
-CoinConfig.CoinsPerSummit = 10
-CoinConfig.CoinsPerCheckpoint = 2
+CoinConfig.CoinsPerSummit = 500
+CoinConfig.CoinsPerCheckpoint = 50
 
 return CoinConfig

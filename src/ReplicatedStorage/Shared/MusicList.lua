@@ -8,7 +8,11 @@
 
 local MusicList = {}
 
-MusicList.Songs = {}
+MusicList.Songs = {
+	{ id = "rbxassetid://136298946425465", title = "Kicau Mania", artist = "Unknown" },
+	{ id = "rbxassetid://104478870890745", title = "Nikmati Hidup Ini", artist = "Unknown" },
+	{ id = "rbxassetid://117487437387749", title = "Berlyn Mix", artist = "Unknown" },
+}
 
 MusicList.DefaultVolume = 0.5
 MusicList.DefaultShuffle = false
