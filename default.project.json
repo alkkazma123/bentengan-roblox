@@ -6,12 +6,18 @@
       "$className": "ReplicatedStorage",
       "Shared": {
         "$path": "src/ReplicatedStorage/Shared"
+      },
+      "SummitShared": {
+        "$path": "src/ReplicatedStorage/SummitShared"
       }
     },
     "ServerScriptService": {
       "$className": "ServerScriptService",
       "Server": {
         "$path": "src/ServerScriptService/Server"
+      },
+      "SummitServer": {
+        "$path": "src/ServerScriptService/SummitServer"
       }
     },
     "StarterPlayer": {
@@ -20,6 +26,9 @@
         "$className": "StarterPlayerScripts",
         "Client": {
           "$path": "src/StarterPlayer/StarterPlayerScripts/Client"
+        },
+        "SummitClient": {
+          "$path": "src/StarterPlayer/StarterPlayerScripts/SummitClient"
         }
       }
     },
