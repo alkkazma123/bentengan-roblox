@@ -41,7 +41,6 @@ local Remotes = {
 	PlayEmote = createEvent("PlayEmote"),
 	ApplyAvatar = createEvent("ApplyAvatar"),
 	ResetAvatar = createEvent("ResetAvatar"),
-	LeaderboardData = createEvent("LeaderboardData"),
 	BuyItem = createFunc("BuyItem"),
 	GetInventory = createFunc("GetInventory"),
 }

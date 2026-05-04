@@ -4,20 +4,22 @@
 ]]
 
 local DataStoreService = game:GetService("DataStoreService")
-local RunService = game:GetService("RunService")
 
 local DataService = {}
 
 local playerData = {}
 local dataStore = nil
 
-if not RunService:IsStudio() then
-	local ok, store = pcall(function()
-		return DataStoreService:GetDataStore("SummitKit_v2")
-	end)
-	if ok then
-		dataStore = store
-	end
+-- DataStore works in published game always.
+-- In Studio: enable "Enable Studio Access to API Services" in Game Settings > Security.
+local ok, store = pcall(function()
+	return DataStoreService:GetDataStore("SummitKit_v2")
+end)
+if ok and store then
+	dataStore = store
+	print("[DataService] DataStore connected.")
+else
+	warn("[DataService] DataStore not available (Studio without API access). Data will NOT persist!")
 end
 
 local DEFAULT = {
@@ -47,10 +49,10 @@ function DataService.LoadPlayer(player)
 	local data = nil
 
 	if dataStore then
-		local ok, result = pcall(function()
+		local loadOk, result = pcall(function()
 			return dataStore:GetAsync("player_" .. player.UserId)
 		end)
-		if ok and result then
+		if loadOk and result then
 			data = result
 			print("[DataService] Loaded data for " .. player.Name)
 		else
@@ -97,13 +99,13 @@ function DataService.SavePlayer(player)
 		return
 	end
 	if dataStore then
-		local ok, err = pcall(function()
+		local saveOk, saveErr = pcall(function()
 			dataStore:SetAsync("player_" .. player.UserId, data)
 		end)
-		if ok then
+		if saveOk then
 			print("[DataService] Saved data for " .. player.Name)
 		else
-			warn("[DataService] Failed to save data for " .. player.Name .. ": " .. tostring(err))
+			warn("[DataService] Failed to save data for " .. player.Name .. ": " .. tostring(saveErr))
 		end
 	end
 	playerData[player.UserId] = nil
