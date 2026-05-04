@@ -6,6 +6,7 @@
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
+local SoundService = game:GetService("SoundService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
@@ -20,6 +21,7 @@ local CheckpointFX = {}
 
 local screenGui = nil
 local notifLabel = nil
+local checkpointSound = nil
 
 local function createUI()
 	screenGui = Instance.new("ScreenGui")
@@ -27,6 +29,19 @@ local function createUI()
 	screenGui.ResetOnSpawn = false
 	screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	screenGui.Parent = playerGui
+
+	-- AutoScale
+	local scale = Instance.new("UIScale")
+	scale.Name = "AutoScale"
+	scale.Parent = screenGui
+
+	local function updateScale()
+		local viewportSize = workspace.CurrentCamera.ViewportSize
+		local ratio = math.clamp(viewportSize.X / 1920, 0.5, 1.5)
+		scale.Scale = ratio
+	end
+	workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateScale)
+	task.defer(updateScale)
 
 	notifLabel = Instance.new("TextLabel")
 	notifLabel.Name = "Notification"
@@ -102,11 +117,23 @@ local function showNotification(text, color)
 	end)
 end
 
+local function playCheckpointSound()
+	if not checkpointSound then
+		checkpointSound = Instance.new("Sound")
+		checkpointSound.Name = "CheckpointSound"
+		checkpointSound.SoundId = CheckpointConfig.SoundId
+		checkpointSound.Volume = 1
+		checkpointSound.Parent = SoundService
+	end
+	checkpointSound:Play()
+end
+
 function CheckpointFX.Init()
 	createUI()
 
 	Remotes.CheckpointReached.OnClientEvent:Connect(function(checkpointIndex)
 		screenShake()
+		playCheckpointSound()
 		local name = "Checkpoint " .. checkpointIndex
 		if CheckpointConfig.Names and CheckpointConfig.Names[checkpointIndex] then
 			name = CheckpointConfig.Names[checkpointIndex]

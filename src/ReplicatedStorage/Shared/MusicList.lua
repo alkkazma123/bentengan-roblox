@@ -1,19 +1,21 @@
 --[[
 	MusicList
 	Configure the playlist for the music player.
-	Add/remove entries to change available songs.
-	The player also scans ReplicatedStorage.Music folder for Sound objects.
+
+	CARA MENGISI:
+	1. Tambahkan entry ke tabel Songs di bawah:
+	   { id = "rbxassetid://ID_DISINI", title = "Judul", artist = "Artis" },
+
+	2. ATAU taruh Sound object langsung ke folder ReplicatedStorage > Music
+	   (buat folder "Music" di ReplicatedStorage, isi dengan Sound objects)
+
+	Kedua cara bisa dipakai bersamaan.
 ]]
 
 local MusicList = {}
 
-MusicList.Songs = {
-	{ id = "rbxassetid://1837849285", title = "Mountain Breeze", artist = "Nature" },
-	{ id = "rbxassetid://1839245717", title = "Summit Theme", artist = "Adventure" },
-	{ id = "rbxassetid://1836114388", title = "Chill Climb", artist = "LoFi" },
-	{ id = "rbxassetid://1844207353", title = "Peak View", artist = "Ambient" },
-	{ id = "rbxassetid://1837916552", title = "Rocky Path", artist = "Indie" },
-}
+-- Isi lagu di sini (kosong = tidak ada default, isi sendiri)
+MusicList.Songs = {}
 
 -- Default volume (0-1)
 MusicList.DefaultVolume = 0.5

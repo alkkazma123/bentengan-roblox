@@ -1,22 +1,20 @@
 --[[
 	EmoteList
 	Configure available emotes.
-	The system also scans ReplicatedStorage.Emotes folder for Animation objects.
+
+	CARA MENGISI:
+	1. Tambahkan entry ke tabel Emotes di bawah:
+	   { id = "rbxassetid://ANIMATION_ID", name = "NamaEmote", icon = "rbxassetid://ICON_ID" },
+
+	2. ATAU taruh Animation object langsung ke folder ReplicatedStorage > Emotes
+	   (buat folder "Emotes" di ReplicatedStorage, isi dengan Animation objects)
+
+	Kedua cara bisa dipakai bersamaan.
 ]]
 
 local EmoteList = {}
 
-EmoteList.Emotes = {
-	{ id = "rbxassetid://3576823880", name = "Wave", icon = "rbxassetid://6031071057" },
-	{ id = "rbxassetid://3576720527", name = "Dance 1", icon = "rbxassetid://6031071057" },
-	{ id = "rbxassetid://3576720527", name = "Dance 2", icon = "rbxassetid://6031071057" },
-	{ id = "rbxassetid://3576720527", name = "Dance 3", icon = "rbxassetid://6031071057" },
-	{ id = "rbxassetid://3576823880", name = "Salute", icon = "rbxassetid://6031071057" },
-	{ id = "rbxassetid://3576823880", name = "Laugh", icon = "rbxassetid://6031071057" },
-	{ id = "rbxassetid://3576823880", name = "Clap", icon = "rbxassetid://6031071057" },
-	{ id = "rbxassetid://3576823880", name = "Sit", icon = "rbxassetid://6031071057" },
-	{ id = "rbxassetid://3576823880", name = "Pushup", icon = "rbxassetid://6031071057" },
-	{ id = "rbxassetid://3576823880", name = "Backflip", icon = "rbxassetid://6031071057" },
-}
+-- Isi emote di sini (kosong = tidak ada default, isi sendiri)
+EmoteList.Emotes = {}
 
 return EmoteList

@@ -1,12 +1,14 @@
 --[[
 	PhoneUI
-	Main phone menu system. Toggle button at top center opens a phone frame
-	with swipeable pages: Shop, Music, Emotes, Settings.
+	Main phone menu system. Toggle button at top center (aligned with Roblox top bar).
+	Phone frame with swipeable pages: Shop, Music, Emotes, Settings.
+	All UI uses AutoScale for device adaptation.
 ]]
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
@@ -18,46 +20,134 @@ local MusicPlayerUI = require(Client:WaitForChild("MusicPlayerUI"))
 local EmoteUI = require(Client:WaitForChild("EmoteUI"))
 local SettingsUI = require(Client:WaitForChild("SettingsUI"))
 
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Remotes = require(Shared:WaitForChild("Remotes"))
+
 local PhoneUI = {}
 
 local screenGui = nil
 local phoneFrame = nil
 local toggleButton = nil
+local coinLabel = nil
 local isOpen = false
 local currentPage = 1
 local pages = {}
-local PHONE_SIZE = UDim2.new(0, 320, 0, 520)
-local PHONE_POSITION_OPEN = UDim2.new(0.5, -160, 0.5, -260)
-local PHONE_POSITION_CLOSED = UDim2.new(0.5, -160, 1.2, 0)
+local PHONE_POSITION_OPEN = UDim2.new(0.5, 0, 0.5, 0)
+local PHONE_POSITION_CLOSED = UDim2.new(0.5, 0, 1.5, 0)
 
 local function createScreenGui()
 	screenGui = Instance.new("ScreenGui")
 	screenGui.Name = "PhoneGui"
 	screenGui.ResetOnSpawn = false
 	screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	screenGui.IgnoreGuiInset = true
 	screenGui.Parent = playerGui
+
+	-- AutoScale: UIScale adapts to screen size
+	local scale = Instance.new("UIScale")
+	scale.Name = "AutoScale"
+	scale.Parent = screenGui
+
+	local function updateScale()
+		local viewportSize = workspace.CurrentCamera.ViewportSize
+		local baseWidth = 1920
+		local ratio = math.clamp(viewportSize.X / baseWidth, 0.5, 1.5)
+		scale.Scale = ratio
+	end
+	workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateScale)
+	task.defer(updateScale)
+end
+
+local function createCoinUI()
+	local coinFrame = Instance.new("Frame")
+	coinFrame.Name = "CoinDisplay"
+	coinFrame.Size = UDim2.new(0, 140, 0, 36)
+	coinFrame.Position = UDim2.new(0, 12, 0, 42)
+	coinFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+	coinFrame.BackgroundTransparency = 0.2
+	coinFrame.Parent = screenGui
+	coinFrame.ZIndex = 10
+
+	local coinCorner = Instance.new("UICorner")
+	coinCorner.CornerRadius = UDim.new(0, 18)
+	coinCorner.Parent = coinFrame
+
+	local coinStroke = Instance.new("UIStroke")
+	coinStroke.Color = Color3.fromRGB(255, 200, 0)
+	coinStroke.Thickness = 1.5
+	coinStroke.Parent = coinFrame
+
+	local coinIcon = Instance.new("TextLabel")
+	coinIcon.Name = "Icon"
+	coinIcon.Size = UDim2.new(0, 30, 0, 30)
+	coinIcon.Position = UDim2.new(0, 6, 0.5, -15)
+	coinIcon.BackgroundTransparency = 1
+	coinIcon.Text = "COIN"
+	coinIcon.TextSize = 9
+	coinIcon.TextColor3 = Color3.fromRGB(255, 215, 0)
+	coinIcon.Font = Enum.Font.GothamBold
+	coinIcon.Parent = coinFrame
+	coinIcon.ZIndex = 11
+
+	coinLabel = Instance.new("TextLabel")
+	coinLabel.Name = "Amount"
+	coinLabel.Size = UDim2.new(1, -42, 1, 0)
+	coinLabel.Position = UDim2.new(0, 38, 0, 0)
+	coinLabel.BackgroundTransparency = 1
+	coinLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+	coinLabel.Text = "0"
+	coinLabel.TextSize = 16
+	coinLabel.Font = Enum.Font.GothamBold
+	coinLabel.TextXAlignment = Enum.TextXAlignment.Left
+	coinLabel.Parent = coinFrame
+	coinLabel.ZIndex = 11
+
+	-- Listen for coin updates
+	Remotes.UpdateCoins.OnClientEvent:Connect(function(amount)
+		if coinLabel then
+			coinLabel.Text = tostring(amount)
+		end
+	end)
+
+	-- Initial value from leaderstats
+	task.defer(function()
+		local leaderstats = player:WaitForChild("leaderstats", 10)
+		if leaderstats then
+			local coins = leaderstats:WaitForChild("Coins", 5)
+			if coins and coinLabel then
+				coinLabel.Text = tostring(coins.Value)
+				coins.Changed:Connect(function(val)
+					if coinLabel then
+						coinLabel.Text = tostring(val)
+					end
+				end)
+			end
+		end
+	end)
 end
 
 local function createToggleButton()
+	-- Position aligned with Roblox top bar (GuiInset is ignored, so y=4 is top)
 	toggleButton = Instance.new("TextButton")
 	toggleButton.Name = "PhoneToggle"
-	toggleButton.Size = UDim2.new(0, 50, 0, 50)
-	toggleButton.Position = UDim2.new(0.5, -25, 0, 10)
-	toggleButton.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+	toggleButton.Size = UDim2.new(0, 44, 0, 44)
+	toggleButton.Position = UDim2.new(0.5, -22, 0, 2)
+	toggleButton.AnchorPoint = Vector2.new(0, 0)
+	toggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
 	toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-	toggleButton.Text = "Phone"
+	toggleButton.Text = "TEL"
 	toggleButton.TextSize = 11
 	toggleButton.Font = Enum.Font.GothamBold
 	toggleButton.Parent = screenGui
 	toggleButton.ZIndex = 10
 
 	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 25)
+	corner.CornerRadius = UDim.new(0, 22)
 	corner.Parent = toggleButton
 
 	local stroke = Instance.new("UIStroke")
-	stroke.Color = Color3.fromRGB(80, 80, 80)
-	stroke.Thickness = 2
+	stroke.Color = Color3.fromRGB(80, 80, 100)
+	stroke.Thickness = 1.5
 	stroke.Parent = toggleButton
 
 	toggleButton.MouseButton1Click:Connect(function()
@@ -68,8 +158,9 @@ end
 local function createPhoneFrame()
 	phoneFrame = Instance.new("Frame")
 	phoneFrame.Name = "PhoneFrame"
-	phoneFrame.Size = PHONE_SIZE
+	phoneFrame.Size = UDim2.new(0, 320, 0, 520)
 	phoneFrame.Position = PHONE_POSITION_CLOSED
+	phoneFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 	phoneFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 	phoneFrame.BorderSizePixel = 0
 	phoneFrame.ClipsDescendants = true
@@ -236,6 +327,7 @@ end
 
 function PhoneUI.Init()
 	createScreenGui()
+	createCoinUI()
 	createToggleButton()
 	createPhoneFrame()
 	setupSwipe()

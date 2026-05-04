@@ -21,4 +21,7 @@ CheckpointConfig.ShakeDuration = 0.3
 -- Notification display duration
 CheckpointConfig.NotificationDuration = 2.5
 
+-- Checkpoint sound ID (plays when reaching a checkpoint)
+CheckpointConfig.SoundId = "rbxassetid://128062463831151"
+
 return CheckpointConfig

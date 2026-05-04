@@ -29,7 +29,7 @@ function CheckpointService.Init()
 			if not player then
 				return
 			end
-			CheckpointService.SetCheckpoint(player, 0, startPart.Position)
+			CheckpointService.SetCheckpoint(player, 0, startPart.Position, startPart.Size)
 		end)
 	end
 
@@ -44,7 +44,7 @@ function CheckpointService.Init()
 				end
 				local current = CheckpointService.GetCheckpoint(player)
 				if index > current then
-					CheckpointService.SetCheckpoint(player, index, cpPart.Position)
+					CheckpointService.SetCheckpoint(player, index, cpPart.Position, cpPart.Size)
 					Remotes.CheckpointReached:FireClient(player, index)
 
 					local Server = ServerScriptService:FindFirstChild("Server")
@@ -57,8 +57,8 @@ function CheckpointService.Init()
 	end
 end
 
-function CheckpointService.SetCheckpoint(player, index, position)
-	playerCheckpoints[player.UserId] = { index = index, position = position }
+function CheckpointService.SetCheckpoint(player, index, position, size)
+	playerCheckpoints[player.UserId] = { index = index, position = position, size = size or Vector3.new(8, 2, 8) }
 end
 
 function CheckpointService.GetCheckpoint(player)
@@ -72,13 +72,13 @@ end
 function CheckpointService.GetSpawnPosition(player)
 	local data = playerCheckpoints[player.UserId]
 	if data then
-		return data.position + Vector3.new(0, 3, 0)
+		return data.position + Vector3.new(0, data.size.Y / 2 + 3, 0)
 	end
 	local checkpointsFolder = workspace:FindFirstChild("Checkpoints")
 	if checkpointsFolder then
 		local startPart = checkpointsFolder:FindFirstChild("Start")
 		if startPart then
-			return startPart.Position + Vector3.new(0, 3, 0)
+			return startPart.Position + Vector3.new(0, startPart.Size.Y / 2 + 3, 0)
 		end
 	end
 	return Vector3.new(0, 10, 0)
