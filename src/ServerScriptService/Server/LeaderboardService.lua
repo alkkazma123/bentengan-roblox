@@ -1,28 +1,30 @@
 --[[
 	LeaderboardService - Server + Global leaderboard boards
-	Creates boards near Start with SurfaceGui.
-	Global board has 3 podium parts with avatar dummies for top 1-3.
-	No ProximityPrompt, boards are always visible.
+	Uses existing parts placed by user: ServerLeaderboard, GlobalLeaderboard, LeaderboardPodiums
+	Global shows all-time rankings. If DataStore unavailable, uses server data.
+	Podium top 1-3 shows avatar dummies.
+	Cooldown timer on boards shows next refresh.
 ]]
 
 local Players = game:GetService("Players")
 local DataStoreService = game:GetService("DataStoreService")
-local RunService = game:GetService("RunService")
 local ServerScriptService = game:GetService("ServerScriptService")
 
 local LeaderboardService = {}
 
 local globalStore = nil
-local UPDATE_INTERVAL = 30
+local UPDATE_INTERVAL = 60
 local MAX_ENTRIES = 100
 
-if not RunService:IsStudio() then
-	local ok, store = pcall(function()
-		return DataStoreService:GetOrderedDataStore("SummitKit_GlobalLB")
-	end)
-	if ok then
-		globalStore = store
-	end
+-- Try to get OrderedDataStore (works in published game, and Studio with API access)
+local storeOk, storeResult = pcall(function()
+	return DataStoreService:GetOrderedDataStore("SummitKit_GlobalLB")
+end)
+if storeOk and storeResult then
+	globalStore = storeResult
+	print("[LeaderboardService] OrderedDataStore connected.")
+else
+	warn("[LeaderboardService] OrderedDataStore not available. Global will use server data as fallback.")
 end
 
 local function getServerLeaderboard()
@@ -50,7 +52,7 @@ end
 
 local function getGlobalLeaderboard()
 	if not globalStore then
-		return {}
+		return nil
 	end
 
 	local entries = {}
@@ -59,7 +61,7 @@ local function getGlobalLeaderboard()
 	end)
 
 	if not ok or not pages then
-		return {}
+		return nil
 	end
 
 	local success, pageData = pcall(function()
@@ -67,7 +69,7 @@ local function getGlobalLeaderboard()
 	end)
 
 	if not success or not pageData then
-		return {}
+		return nil
 	end
 
 	for rank, entry in ipairs(pageData) do
@@ -113,20 +115,13 @@ local function updateGlobalStore()
 	end
 end
 
-local function createBoard(name, cframe)
-	local part = Instance.new("Part")
-	part.Name = name
-	part.Size = Vector3.new(14, 18, 0.5)
-	part.CFrame = cframe
-	part.Anchored = true
-	part.CanCollide = false
-	part.Material = Enum.Material.SmoothPlastic
-	part.Color = Color3.fromRGB(20, 20, 25)
-	part.Parent = workspace
-	return part
-end
+local function setupBoardGui(part, title)
+	-- Remove existing gui if any
+	local existing = part:FindFirstChild("LeaderboardGui")
+	if existing then
+		existing:Destroy()
+	end
 
-local function createBoardGui(part, title)
 	local gui = Instance.new("SurfaceGui")
 	gui.Name = "LeaderboardGui"
 	gui.Face = Enum.NormalId.Front
@@ -152,10 +147,23 @@ local function createBoardGui(part, title)
 	titleLabel.Font = Enum.Font.GothamBold
 	titleLabel.Parent = bg
 
+	-- Cooldown timer label
+	local timerLabel = Instance.new("TextLabel")
+	timerLabel.Name = "Timer"
+	timerLabel.Size = UDim2.new(1, 0, 0, 20)
+	timerLabel.Position = UDim2.new(0, 0, 0, 45)
+	timerLabel.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+	timerLabel.BorderSizePixel = 0
+	timerLabel.Text = "Next update: --"
+	timerLabel.TextColor3 = Color3.fromRGB(150, 150, 200)
+	timerLabel.TextSize = 11
+	timerLabel.Font = Enum.Font.Gotham
+	timerLabel.Parent = bg
+
 	local scroll = Instance.new("ScrollingFrame")
 	scroll.Name = "Entries"
-	scroll.Size = UDim2.new(1, -8, 1, -52)
-	scroll.Position = UDim2.new(0, 4, 0, 48)
+	scroll.Size = UDim2.new(1, -8, 1, -72)
+	scroll.Position = UDim2.new(0, 4, 0, 68)
 	scroll.BackgroundTransparency = 1
 	scroll.ScrollBarThickness = 3
 	scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
@@ -166,7 +174,7 @@ local function createBoardGui(part, title)
 	layout.Padding = UDim.new(0, 2)
 	layout.Parent = scroll
 
-	return scroll
+	return scroll, timerLabel
 end
 
 local function clearScroll(scroll)
@@ -197,18 +205,21 @@ local function addEntry(scroll, rank, name, summits, isTop3)
 		row.BackgroundTransparency = 0.4
 	end
 
+	local medals = { "\u{1F947} ", "\u{1F948} ", "\u{1F949} " }
+	local prefix = if isTop3 then (medals[rank] or "#" .. rank) else "#" .. rank
+
 	local rankLabel = Instance.new("TextLabel")
-	rankLabel.Size = UDim2.new(0, 35, 1, 0)
+	rankLabel.Size = UDim2.new(0, 40, 1, 0)
 	rankLabel.BackgroundTransparency = 1
-	rankLabel.Text = "#" .. rank
+	rankLabel.Text = prefix
 	rankLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 	rankLabel.TextSize = 13
 	rankLabel.Font = Enum.Font.GothamBold
 	rankLabel.Parent = row
 
 	local nameLabel = Instance.new("TextLabel")
-	nameLabel.Size = UDim2.new(0.55, -35, 1, 0)
-	nameLabel.Position = UDim2.new(0, 38, 0, 0)
+	nameLabel.Size = UDim2.new(0.55, -40, 1, 0)
+	nameLabel.Position = UDim2.new(0, 42, 0, 0)
 	nameLabel.BackgroundTransparency = 1
 	nameLabel.Text = name
 	nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -222,7 +233,7 @@ local function addEntry(scroll, rank, name, summits, isTop3)
 	sumLabel.Size = UDim2.new(0.35, 0, 1, 0)
 	sumLabel.Position = UDim2.new(0.65, 0, 0, 0)
 	sumLabel.BackgroundTransparency = 1
-	sumLabel.Text = tostring(summits)
+	sumLabel.Text = tostring(summits) .. " \u{26F0}"
 	sumLabel.TextColor3 = Color3.fromRGB(200, 200, 255)
 	sumLabel.TextSize = 12
 	sumLabel.Font = Enum.Font.GothamBold
@@ -230,68 +241,27 @@ local function addEntry(scroll, rank, name, summits, isTop3)
 	sumLabel.Parent = row
 end
 
--- Podium system: 3 parts with avatar dummies
+-- Podium avatar system
 local podiumModels = {}
 
-local function createPodiums(basePos)
-	local podiumFolder = Instance.new("Folder")
-	podiumFolder.Name = "LeaderboardPodiums"
-	podiumFolder.Parent = workspace
-
-	local heights = { 8, 6, 4 }
-	local offsets = { 0, -5, 5 }
-	local colors = {
-		Color3.fromRGB(255, 200, 0),
-		Color3.fromRGB(180, 180, 190),
-		Color3.fromRGB(180, 110, 40),
-	}
-
-	for i = 1, 3 do
-		local podium = Instance.new("Part")
-		podium.Name = "Top" .. i
-		podium.Size = Vector3.new(4, heights[i], 4)
-		podium.Position = basePos + Vector3.new(offsets[i], heights[i] / 2, 0)
-		podium.Anchored = true
-		podium.Material = Enum.Material.SmoothPlastic
-		podium.Color = colors[i]
-		podium.Parent = podiumFolder
-
-		-- Rank label on podium
-		local gui = Instance.new("SurfaceGui")
-		gui.Face = Enum.NormalId.Front
-		gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-		gui.PixelsPerStud = 30
-		gui.Parent = podium
-
-		local label = Instance.new("TextLabel")
-		label.Size = UDim2.new(1, 0, 1, 0)
-		label.BackgroundTransparency = 1
-		label.Text = "#" .. i
-		label.TextColor3 = Color3.fromRGB(255, 255, 255)
-		label.TextSize = 40
-		label.Font = Enum.Font.GothamBold
-		label.Parent = gui
-
-		podiumModels[i] = { part = podium, currentModel = nil }
+local function updatePodiumAvatars(entries, podiumFolder)
+	if not podiumFolder then
+		return
 	end
 
-	return podiumFolder
-end
-
-local function updatePodiumAvatars(globalEntries)
 	for i = 1, 3 do
-		local podData = podiumModels[i]
-		if not podData then
+		local podium = podiumFolder:FindFirstChild("Top" .. i)
+		if not podium then
 			continue
 		end
 
 		-- Remove old model
-		if podData.currentModel then
-			podData.currentModel:Destroy()
-			podData.currentModel = nil
+		if podiumModels[i] then
+			podiumModels[i]:Destroy()
+			podiumModels[i] = nil
 		end
 
-		local entry = globalEntries[i]
+		local entry = entries[i]
 		if not entry or entry.userId <= 0 then
 			continue
 		end
@@ -303,77 +273,95 @@ local function updatePodiumAvatars(globalEntries)
 
 		if ok and model then
 			model.Name = "TopPlayer_" .. i
+
 			-- Position on top of podium
-			local podiumTop = podData.part.Position + Vector3.new(0, podData.part.Size.Y / 2, 0)
+			local podiumTop = podium.Position + Vector3.new(0, podium.Size.Y / 2, 0)
 			model:SetPrimaryPartCFrame(CFrame.new(podiumTop + Vector3.new(0, 3, 0)))
 
-			-- Make sure it won't fall
+			-- Anchor all parts so it won't fall
 			for _, part in ipairs(model:GetDescendants()) do
 				if part:IsA("BasePart") then
 					part.Anchored = true
 				end
 			end
 
-			-- Add name tag
+			-- Add name tag above head
 			local head = model:FindFirstChild("Head")
 			if head then
 				local bb = Instance.new("BillboardGui")
-				bb.Size = UDim2.new(0, 120, 0, 30)
-				bb.StudsOffset = Vector3.new(0, 2, 0)
+				bb.Size = UDim2.new(0, 150, 0, 40)
+				bb.StudsOffset = Vector3.new(0, 2.5, 0)
 				bb.Parent = head
 
 				local nameTag = Instance.new("TextLabel")
-				nameTag.Size = UDim2.new(1, 0, 1, 0)
+				nameTag.Size = UDim2.new(1, 0, 0.5, 0)
 				nameTag.BackgroundTransparency = 1
-				nameTag.Text = entry.name .. " (" .. entry.summits .. ")"
+				nameTag.Text = entry.name
 				nameTag.TextColor3 = Color3.fromRGB(255, 255, 255)
-				nameTag.TextStrokeTransparency = 0.5
+				nameTag.TextStrokeTransparency = 0.3
 				nameTag.TextSize = 14
 				nameTag.Font = Enum.Font.GothamBold
 				nameTag.Parent = bb
+
+				local sumTag = Instance.new("TextLabel")
+				sumTag.Size = UDim2.new(1, 0, 0.5, 0)
+				sumTag.Position = UDim2.new(0, 0, 0.5, 0)
+				sumTag.BackgroundTransparency = 1
+				sumTag.Text = tostring(entry.summits) .. " Summits"
+				sumTag.TextColor3 = Color3.fromRGB(255, 215, 0)
+				sumTag.TextStrokeTransparency = 0.3
+				sumTag.TextSize = 12
+				sumTag.Font = Enum.Font.GothamBold
+				sumTag.Parent = bb
 			end
 
 			model.Parent = workspace
-			podData.currentModel = model
+			podiumModels[i] = model
+			print("[LeaderboardService] Avatar placed on Top" .. i .. ": " .. entry.name)
 		else
-			warn("[LeaderboardService] Failed to create avatar for userId: " .. tostring(entry.userId))
+			warn("[LeaderboardService] Failed to create avatar for Top" .. i .. " userId: " .. tostring(entry.userId))
 		end
 	end
 end
 
 function LeaderboardService.Init(_remotes)
-	-- Find Start position
-	local folder = workspace:FindFirstChild("Checkpoints")
-	if not folder then
-		folder = workspace:WaitForChild("Checkpoints", 30)
+	-- Find existing parts (user places them)
+	local serverBoard = workspace:FindFirstChild("ServerLeaderboard")
+	if not serverBoard then
+		serverBoard = workspace:WaitForChild("ServerLeaderboard", 30)
+	end
+	if not serverBoard then
+		warn("[LeaderboardService] WARNING: 'ServerLeaderboard' part not found in workspace!")
+		return
 	end
 
-	local startPos = Vector3.new(0, 1, 0)
-	if folder then
-		local startPart = folder:FindFirstChild("Start")
-		if startPart then
-			startPos = startPart.Position
-		end
+	local globalBoard = workspace:FindFirstChild("GlobalLeaderboard")
+	if not globalBoard then
+		globalBoard = workspace:WaitForChild("GlobalLeaderboard", 30)
+	end
+	if not globalBoard then
+		warn("[LeaderboardService] WARNING: 'GlobalLeaderboard' part not found in workspace!")
+		return
 	end
 
-	-- Create boards
-	local serverBoardCF = CFrame.new(startPos + Vector3.new(-12, 9, -8)) * CFrame.Angles(0, math.rad(10), 0)
-	local globalBoardCF = CFrame.new(startPos + Vector3.new(12, 9, -8)) * CFrame.Angles(0, math.rad(-10), 0)
+	local podiumFolder = workspace:FindFirstChild("LeaderboardPodiums")
+	if not podiumFolder then
+		podiumFolder = workspace:WaitForChild("LeaderboardPodiums", 15)
+	end
+	if not podiumFolder then
+		warn("[LeaderboardService] WARNING: 'LeaderboardPodiums' folder not found. Podium avatars disabled.")
+	end
 
-	local serverBoard = createBoard("ServerLeaderboard", serverBoardCF)
-	local globalBoard = createBoard("GlobalLeaderboard", globalBoardCF)
+	-- Setup board GUIs
+	local serverScroll, serverTimer = setupBoardGui(serverBoard, "\u{1F3E0} SERVER")
+	local globalScroll, globalTimer = setupBoardGui(globalBoard, "\u{1F30D} GLOBAL")
 
-	local serverScroll = createBoardGui(serverBoard, "\u{1F3E0} SERVER")
-	local globalScroll = createBoardGui(globalBoard, "\u{1F30D} GLOBAL")
-
-	-- Create podiums next to global board
-	local podiumBase = startPos + Vector3.new(12, 0, -14)
-	createPodiums(podiumBase)
-
-	print("[LeaderboardService] Boards + podiums created near Start.")
+	print("[LeaderboardService] Boards initialized. Update interval: " .. UPDATE_INTERVAL .. "s")
 
 	-- Update function
 	local function updateBoards()
+		print("[LeaderboardService] Updating leaderboards...")
+
 		-- Server leaderboard
 		local serverData = getServerLeaderboard()
 		clearScroll(serverScroll)
@@ -381,22 +369,83 @@ function LeaderboardService.Init(_remotes)
 			addEntry(serverScroll, i, entry.name, entry.summits, i <= 3)
 		end
 
-		-- Update global store with current players
+		if #serverData == 0 then
+			local empty = Instance.new("Frame")
+			empty.Size = UDim2.new(1, 0, 0, 30)
+			empty.BackgroundTransparency = 1
+			empty.Parent = serverScroll
+
+			local emptyLabel = Instance.new("TextLabel")
+			emptyLabel.Size = UDim2.new(1, 0, 1, 0)
+			emptyLabel.BackgroundTransparency = 1
+			emptyLabel.Text = "No players yet"
+			emptyLabel.TextColor3 = Color3.fromRGB(100, 100, 120)
+			emptyLabel.TextSize = 12
+			emptyLabel.Font = Enum.Font.Gotham
+			emptyLabel.Parent = empty
+		end
+
+		-- Push current players to global store
 		updateGlobalStore()
 
-		-- Global leaderboard
+		-- Global leaderboard (DataStore or fallback to server data)
 		local globalData = getGlobalLeaderboard()
+
+		-- Fallback: if DataStore empty/unavailable, use server data as global
+		if not globalData or #globalData == 0 then
+			globalData = serverData
+		end
+
 		clearScroll(globalScroll)
 		for i, entry in ipairs(globalData) do
 			addEntry(globalScroll, i, entry.name, entry.summits, i <= 3)
 		end
 
+		if #globalData == 0 then
+			local empty = Instance.new("Frame")
+			empty.Size = UDim2.new(1, 0, 0, 30)
+			empty.BackgroundTransparency = 1
+			empty.Parent = globalScroll
+
+			local emptyLabel = Instance.new("TextLabel")
+			emptyLabel.Size = UDim2.new(1, 0, 1, 0)
+			emptyLabel.BackgroundTransparency = 1
+			emptyLabel.Text = "No data yet"
+			emptyLabel.TextColor3 = Color3.fromRGB(100, 100, 120)
+			emptyLabel.TextSize = 12
+			emptyLabel.Font = Enum.Font.Gotham
+			emptyLabel.Parent = empty
+		end
+
 		-- Update podium avatars
-		updatePodiumAvatars(globalData)
+		updatePodiumAvatars(globalData, podiumFolder)
+
+		print(
+			"[LeaderboardService] Update complete. " .. #serverData .. " server, " .. #globalData .. " global entries."
+		)
 	end
 
-	-- Initial update (delay for data to load)
-	task.delay(8, updateBoards)
+	-- Cooldown timer loop
+	task.spawn(function()
+		local countdown = UPDATE_INTERVAL
+		while true do
+			countdown = countdown - 1
+			if countdown <= 0 then
+				countdown = UPDATE_INTERVAL
+			end
+			local text = "Next update: " .. countdown .. "s"
+			if serverTimer then
+				serverTimer.Text = text
+			end
+			if globalTimer then
+				globalTimer.Text = text
+			end
+			task.wait(1)
+		end
+	end)
+
+	-- Initial update (give time for players to load data)
+	task.delay(5, updateBoards)
 
 	-- Periodic update
 	task.spawn(function()
