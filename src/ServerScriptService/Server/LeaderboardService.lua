@@ -274,15 +274,34 @@ local function updatePodiumAvatars(entries, podiumFolder)
 		if ok and model then
 			model.Name = "TopPlayer_" .. i
 
-			-- Position on top of podium
-			local podiumTop = podium.Position + Vector3.new(0, podium.Size.Y / 2, 0)
-			model:SetPrimaryPartCFrame(CFrame.new(podiumTop + Vector3.new(0, 3, 0)))
+			-- Position on top of podium using MoveTo (handles body correctly)
+			local podiumTop = podium.Position + Vector3.new(0, podium.Size.Y / 2 + 0.5, 0)
+			model:MoveTo(podiumTop)
+
+			-- Wait a frame for joints to resolve then anchor
+			task.wait()
 
 			-- Anchor all parts so it won't fall
 			for _, part in ipairs(model:GetDescendants()) do
 				if part:IsA("BasePart") then
 					part.Anchored = true
 				end
+			end
+
+			-- Play idle animation
+			local humanoid = model:FindFirstChildOfClass("Humanoid")
+			if humanoid then
+				local animator = humanoid:FindFirstChildOfClass("Animator")
+				if not animator then
+					animator = Instance.new("Animator")
+					animator.Parent = humanoid
+				end
+
+				local anim = Instance.new("Animation")
+				anim.AnimationId = "rbxassetid://133709041743709"
+				local animTrack = animator:LoadAnimation(anim)
+				animTrack.Looped = true
+				animTrack:Play()
 			end
 
 			-- Add name tag above head

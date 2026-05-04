@@ -15,6 +15,7 @@ EmoteList.Emotes = {
 	{ id = "rbxassetid://74179175835879", name = "Low Cortisol" },
 	{ id = "rbxassetid://108242544356577", name = "Luna Biduan" },
 	{ id = "rbxassetid://82709687426105", name = "Suiii" },
+	{ id = "rbxassetid://133709041743709", name = "bsk gared" },
 }
 
 return EmoteList
