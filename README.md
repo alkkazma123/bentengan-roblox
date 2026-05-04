@@ -1,117 +1,95 @@
-# Bentengan - Roblox Game
+# Summit Kit - Game Gunung (Roblox)
 
-Game Roblox bertema **bentengan** (permainan tradisional Indonesia: dua tim saling menjaga benteng/base, menangkap lawan dengan menyentuh saat keluar dari zona aman, dan membebaskan teman yang tertangkap).
-
-Satu server berisi **4 lobby terpisah** (Lobby 1-4), masing-masing punya arena sendiri, dan berjalan paralel.
+Game Roblox **mountain climbing / obby** dengan sistem summit lengkap.
 
 ## Fitur
 
-- **Loading screen dengan progress bar real** (`ContentProvider:PreloadAsync`, menunggu sync awal dari server).
-- **Rules UI** muncul setelah loading, dengan tombol close.
-- **Lobby UI maker**: 4 kartu lobby, status live (Idle / Countdown / InMatch), join/leave, tombol shop.
-- **Minimal 2 pemain** memicu countdown 10-15 detik (default 12).
-- **Map per lobby** dengan arena terpisah jauh, dua base, dua penjara, dua safe zone, dua spawn pad, dan lobby pad.
-- **Tag / capture / jail / free** dengan deteksi `Touched` dan aturan "siapa paling baru keluar safe zone boleh nge-tag".
-- **Win condition**: semua lawan tertangkap, salah satu pemain menyentuh base lawan, atau timeout (tim dengan pemain bebas terbanyak menang).
-- **Leaderboard**: `Wins`, `Coins`, `Tags`, `Deaths` pada default Roblox leaderboard.
-- **Shop dark minimalist** dengan Speed Boost / Jump Boost / Hacker ESP / Fly.
-- **Validasi equip** server-side: maksimal 3 ability, tidak boleh tipe sama.
-- **Fly**: hanya 10 detik per match, cooldown 30 detik, dikontrol via WASD/space/shift.
-- **ESP**: Highlight musuh lewat tembok saat equip HackerESP.
-- **HUD in-match**: timer, team indicator, coin counter, 3 slot ability (Q/E/R hotkey), toast, banner jail.
-- **Anti-exploit dasar**: rate limit per remote, validasi server-side untuk semua aksi (tag, coin, equip, fly).
-- **Save data** via `DataStoreService` (fallback in-memory di Studio).
-- **Modular**: dipisah antara `ReplicatedStorage/Shared`, `ServerScriptService/Server`, `StarterPlayer/Client`.
+- **Checkpoint System**: Start → 8 Checkpoints → Finish (jumlah configurable)
+- **Screen Shake + Notifikasi** saat mencapai checkpoint
+- **Kill Parts**: teleport ke checkpoint terakhir saat tersentuh
+- **Summit/Finish**: award summits + coins, auto teleport ke start
+- **Overhead System**: Username, jumlah summit, title (Newbie → Rookie → ... → Summit God)
+- **Coin & Shop**: Beli trail dan aura dengan coins
+- **Music Player**: UI Spotify-like (play/pause/next/prev/shuffle/loop/volume/queue)
+- **Emote System**: 10+ emotes, grid UI, auto-stop saat bergerak
+- **Phone Menu UI**: Toggle button di atas tengah, 4 tab swipeable (Shop/Music/Emotes/Settings)
+- **Settings**: Hide players, hide auras, hide trails
+- **Data Persistence**: DataStore save (summits, coins, inventory, equipped, settings)
+- **Auto Map Builder**: Map dibuild otomatis saat runtime jika belum ada
+
+## Quick Start (PowerShell)
+
+```powershell
+# 1. Buka PowerShell, jalankan sekali:
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+
+# 2. Clone dan setup:
+git clone https://github.com/alkkazma123/bentengan-roblox.git
+cd bentengan-roblox
+git checkout devin/1777857766-summit-kit-standalone
+.\Setup.ps1
+```
+
+Atau manual:
+```powershell
+rojo build -o SummitKit.rbxlx
+rojo serve
+```
+
+Lalu di Studio: Rojo Plugin → Connect → F5.
 
 ## Struktur File
 
 ```
 src/
-├── ReplicatedStorage/Shared/   # Dipakai bersama client+server
-│   ├── GameConfig.lua          # Konstanta, definisi ability, harga, warna tim
-│   ├── Remotes.lua             # RemoteEvent / RemoteFunction
-│   ├── RulesText.lua           # Teks rules
-│   ├── Theme.lua               # Token warna & helper UI
-│   └── Utils.lua
-├── ServerScriptService/Server/
-│   ├── init.server.lua         # Bootstrap server, routing remote
-│   ├── LobbyManager.lua        # Owns 4 Lobby
-│   ├── Lobby.lua               # State machine per lobby + match
-│   ├── TagSystem.lua           # Tag/jail/base touch detection
-│   ├── ArenaResolver.lua       # Baca (atau auto-build) workspace.Arenas.Arena_X
-│   ├── ArenaBuilder.lua        # Procedural builder, dipakai fallback + SetupArenas
-│   ├── DataService.lua         # DataStore wrapper
-│   ├── ShopService.lua         # Buy/Equip/Unequip validation
-│   ├── AbilityService.lua      # Efek ability (speed/jump/fly) server-side
-│   ├── AntiExploit.lua         # Rate limiting
-│   └── Leaderstats.lua         # Mirror ke leaderstats folder
-└── StarterPlayer/StarterPlayerScripts/Client/
-    ├── init.client.lua         # Bootstrap client
-    ├── LoadingUI.lua
-    ├── RulesUI.lua
-    ├── LobbyUI.lua
-    ├── ShopUI.lua
-    ├── HUD.lua
-    └── AbilityController.lua   # ESP rendering + Fly input
+├── ReplicatedStorage/Shared/          # Config modules
+│   ├── CheckpointConfig.lua           # Jumlah checkpoint (default 8)
+│   ├── SummitConfig.lua               # Summit rewards
+│   ├── TitleConfig.lua                # Titles berdasarkan summit count
+│   ├── CoinConfig.lua                 # Coin rewards
+│   ├── ShopConfig.lua                 # Items (trails & auras)
+│   ├── MusicList.lua                  # Playlist musik
+│   ├── EmoteList.lua                  # Daftar emotes
+│   └── Remotes.lua                    # RemoteEvents/Functions
+├── ServerScriptService/Server/        # Server scripts
+│   ├── init.server.lua                # Bootstrap
+│   ├── DataService.lua                # Save/load player data
+│   ├── CheckpointService.lua          # Checkpoint tracking
+│   ├── SummitService.lua              # Summit rewards
+│   ├── KillPartService.lua            # Kill part teleport
+│   ├── OverheadService.lua            # BillboardGui overhead
+│   ├── CoinService.lua                # Coin sync
+│   ├── ShopService.lua                # Buy/equip items
+│   ├── EmoteService.lua               # Play emotes
+│   └── MapBuilder.lua                 # Auto-build map
+└── StarterPlayer/StarterPlayerScripts/Client/  # Client scripts
+    ├── init.client.lua                # Bootstrap
+    ├── CheckpointFX.lua               # Shake + notification
+    ├── PhoneUI.lua                    # Phone menu (4 tabs)
+    ├── ShopUI.lua                     # Shop page
+    ├── MusicPlayerUI.lua              # Music player page
+    ├── EmoteUI.lua                    # Emote grid page
+    ├── SettingsUI.lua                 # Settings toggles page
+    ├── OverheadController.lua         # Overhead sync
+    └── SettingsController.lua         # Apply hide settings
 ```
 
-## Cara Menggunakan (Rojo)
+## Konfigurasi
 
-1. Install [Rojo](https://rojo.space/) (via `aftman install`, `rokit install`, atau binary manual).
-2. Install plugin Rojo di Roblox Studio.
-3. Di terminal, jalankan `rojo serve` dari folder repo.
-4. Di Studio, place kosong, klik plugin Rojo → **Connect**.
-5. Tekan **F5** / Play — kalau `workspace.Arenas` belum ada, server auto-build 4 arena saat start, dan game langsung jalan.
+| File | Apa yang bisa diubah |
+|------|---------------------|
+| `CheckpointConfig.lua` | `TotalCheckpoints = 8` → ubah jumlah |
+| `SummitConfig.lua` | `SummitsPerFinish`, `Cooldown`, `TeleportDelay` |
+| `TitleConfig.lua` | Threshold dan nama title |
+| `CoinConfig.lua` | Coins per summit/checkpoint |
+| `ShopConfig.lua` | Tambah/hapus trail dan aura |
+| `MusicList.lua` | Tambah lagu (atau folder `ReplicatedStorage.Music`) |
+| `EmoteList.lua` | Tambah emote (atau folder `ReplicatedStorage.Emotes`) |
 
-### Edit arena secara manual (opsional)
-
-Kalau mau arena yang bisa kamu pindah / dekorasi / simpan permanen di place file,
-jalankan sekali saja:
-
-1. Studio di **edit mode** (jangan saat play).
-2. **View → Command Bar**.
-3. Copy isi `tools/SetupArenas.lua` → paste ke Command Bar → Enter.
-4. `Ctrl+S` untuk save place.
-
-Setelah itu semua part hidup sebagai instance persistent di `workspace.Arenas`
-dan bebas dipindah / diganti ukuran / material / warna. Runtime tidak akan
-regenerate selama 9 child berikut masih ada di tiap Arena_X:
-`RedSpawn`, `BlueSpawn`, `RedBase`, `BlueBase`, `RedJail`, `BlueJail`,
-`RedSafeZone`, `BlueSafeZone`, `LobbySpawn`.
-
-Rebuild dari nol: hapus folder `Arenas` di Studio → F5 (auto-build) atau jalankan `SetupArenas.lua` lagi (build + persist).
-
-> `rojo build -o BentenganGame.rbxlx` juga bisa dipakai untuk build file place manual.
-
-## Lobby UI
-
-- Tombol **—** di top bar atau tekan **M** untuk minimize lobby UI → pemain bisa jalan-jalan di lobby pad.
-- Klik pill "OPEN LOBBY [M]" di atas layar atau tekan **M** lagi untuk membuka kembali.
-- BillboardGui (label base/jail/lobby) hanya terlihat dari jarak ≤60 studs.
-
-## Pengembangan
-
-Lint dengan [selene](https://github.com/Kampfkarren/selene):
+## Lint & Format
 
 ```bash
 selene src/
-```
-
-Format dengan [StyLua](https://github.com/JohnnyMorganz/StyLua):
-
-```bash
 stylua src/
+stylua --check src/
 ```
-
-## Balancing
-
-Edit `src/ReplicatedStorage/Shared/GameConfig.lua`:
-
-- `MinPlayersPerLobby`, `MaxPlayersPerLobby`
-- `CountdownSeconds`, `MatchDurationSeconds`
-- `Rewards.*` - jumlah coin reward
-- `Abilities.*.Price` / `Params` - harga dan parameter ability
-
-## Lisensi
-
-MIT.

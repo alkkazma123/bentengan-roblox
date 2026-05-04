@@ -1,205 +1,213 @@
---!strict
--- Player profile data: wins, coins, kills (tags), deaths, owned + equipped abilities.
--- Uses DataStoreService in live games; falls back to in-memory in Studio (no HTTP / auto-save issues).
+--[[
+	DataService
+	Handles player data persistence (summits, coins, inventory, settings).
+]]
 
 local DataStoreService = game:GetService("DataStoreService")
-local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local GameConfig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("GameConfig"))
 
 local DataService = {}
 
-export type Profile = {
-	Wins: number,
-	Coins: number,
-	Kills: number,
-	Deaths: number,
-	OwnedAbilities: { [string]: boolean },
-	EquippedAbilities: { string },
-	-- Daily login bonus / spin tracking. All times are os.time() (UTC seconds).
-	LastLoginAt: number,
-	LoginStreak: number,
-	LastSpinAt: number,
-	-- Custom title shown above the player's head.
-	Title: string,
-	LastTitleChangeAt: number,
+local DATA_KEY = "SummitData_v1"
+local playerData = {}
+
+local dataStore = nil
+if not RunService:IsStudio() then
+	dataStore = DataStoreService:GetDataStore("SummitGameStore")
+end
+
+local DEFAULT_DATA = {
+	summits = 0,
+	coins = 0,
+	inventory = {},
+	equipped = { trail = nil, aura = nil },
+	settings = { hidePlayers = false, hideAura = false, hideTrail = false },
 }
 
-local PROFILE_STORE_NAME = "BentenganProfile_v1"
-local store: DataStore? = nil
+function DataService.Init() end
 
-local ok, storeOrErr = pcall(function()
-	return DataStoreService:GetDataStore(PROFILE_STORE_NAME)
-end)
-if ok then
-	store = storeOrErr
-else
-	warn("[DataService] DataStore unavailable:", storeOrErr)
-end
-
-local profiles: { [Player]: Profile } = {}
-
-local function defaultProfile(): Profile
-	return {
-		Wins = 0,
-		Coins = GameConfig.StartingCoins,
-		Kills = 0,
-		Deaths = 0,
-		OwnedAbilities = {},
-		EquippedAbilities = {},
-		LastLoginAt = 0,
-		LoginStreak = 0,
-		LastSpinAt = 0,
-		Title = "",
-		LastTitleChangeAt = 0,
-	}
-end
-
-local function key(player: Player): string
-	return "p_" .. tostring(player.UserId)
-end
-
-function DataService.getProfile(player: Player): Profile
-	local p = profiles[player]
-	if p then
-		return p
-	end
-	return defaultProfile()
-end
-
-function DataService.isLoaded(player: Player): boolean
-	return profiles[player] ~= nil
-end
-
-function DataService.load(player: Player)
-	if profiles[player] then
-		return
-	end
-	local data: Profile? = nil
-	if store then
-		local s, r = pcall(function()
-			return store:GetAsync(key(player))
+function DataService.LoadPlayer(player)
+	local data = nil
+	if dataStore then
+		local success, result = pcall(function()
+			return dataStore:GetAsync(DATA_KEY .. "_" .. player.UserId)
 		end)
-		if s and type(r) == "table" then
-			data = r
-		elseif not s then
-			warn("[DataService] GetAsync failed:", r)
+		if success and result then
+			data = result
 		end
 	end
-	local profile = data or defaultProfile()
-	-- Fill missing fields (forward-compat)
-	local def = defaultProfile()
-	for k, v in def do
-		if profile[k] == nil then
-			profile[k] = v
+
+	if not data then
+		data = {}
+		for k, v in pairs(DEFAULT_DATA) do
+			if type(v) == "table" then
+				data[k] = {}
+				for k2, v2 in pairs(v) do
+					data[k][k2] = v2
+				end
+			else
+				data[k] = v
+			end
 		end
 	end
-	profiles[player] = profile
-	return profile
+
+	for k, v in pairs(DEFAULT_DATA) do
+		if data[k] == nil then
+			if type(v) == "table" then
+				data[k] = {}
+				for k2, v2 in pairs(v) do
+					data[k][k2] = v2
+				end
+			else
+				data[k] = v
+			end
+		end
+	end
+
+	playerData[player.UserId] = data
+
+	local leaderstats = Instance.new("Folder")
+	leaderstats.Name = "leaderstats"
+	leaderstats.Parent = player
+
+	local summitsVal = Instance.new("IntValue")
+	summitsVal.Name = "Summits"
+	summitsVal.Value = data.summits
+	summitsVal.Parent = leaderstats
+
+	local coinsVal = Instance.new("IntValue")
+	coinsVal.Name = "Coins"
+	coinsVal.Value = data.coins
+	coinsVal.Parent = leaderstats
 end
 
-function DataService.save(player: Player)
-	local profile = profiles[player]
-	if not profile then
+function DataService.SavePlayer(player)
+	local data = playerData[player.UserId]
+	if not data then
 		return
 	end
-	if not store then
+	if dataStore then
+		pcall(function()
+			dataStore:SetAsync(DATA_KEY .. "_" .. player.UserId, data)
+		end)
+	end
+	playerData[player.UserId] = nil
+end
+
+function DataService.GetData(player)
+	return playerData[player.UserId]
+end
+
+function DataService.AddSummits(player, amount)
+	local data = playerData[player.UserId]
+	if not data then
 		return
 	end
-	if RunService:IsStudio() then
-		return -- avoid spamming datastores during tests
-	end
-	local ok2, err = pcall(function()
-		store:SetAsync(key(player), profile)
-	end)
-	if not ok2 then
-		warn("[DataService] SetAsync failed for", player.Name, err)
+	data.summits = data.summits + amount
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if leaderstats then
+		local val = leaderstats:FindFirstChild("Summits")
+		if val then
+			val.Value = data.summits
+		end
 	end
 end
 
-function DataService.unload(player: Player)
-	DataService.save(player)
-	profiles[player] = nil
-end
-
-function DataService.addCoins(player: Player, amount: number)
-	local p = profiles[player]
-	if not p then
+function DataService.AddCoins(player, amount)
+	local data = playerData[player.UserId]
+	if not data then
 		return
 	end
-	p.Coins = math.max(0, p.Coins + amount)
+	data.coins = data.coins + amount
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if leaderstats then
+		local val = leaderstats:FindFirstChild("Coins")
+		if val then
+			val.Value = data.coins
+		end
+	end
 end
 
-function DataService.spendCoins(player: Player, amount: number): boolean
-	local p = profiles[player]
-	if not p then
+function DataService.GetCoins(player)
+	local data = playerData[player.UserId]
+	if not data then
+		return 0
+	end
+	return data.coins
+end
+
+function DataService.SpendCoins(player, amount)
+	local data = playerData[player.UserId]
+	if not data then
 		return false
 	end
-	if p.Coins < amount then
+	if data.coins < amount then
 		return false
 	end
-	p.Coins -= amount
+	data.coins = data.coins - amount
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if leaderstats then
+		local val = leaderstats:FindFirstChild("Coins")
+		if val then
+			val.Value = data.coins
+		end
+	end
 	return true
 end
 
-function DataService.recordWin(player: Player)
-	local p = profiles[player]
-	if p then
-		p.Wins += 1
+function DataService.AddToInventory(player, itemId)
+	local data = playerData[player.UserId]
+	if not data then
+		return
 	end
+	table.insert(data.inventory, itemId)
 end
 
-function DataService.recordKill(player: Player)
-	local p = profiles[player]
-	if p then
-		p.Kills += 1
-	end
-end
-
-function DataService.recordDeath(player: Player)
-	local p = profiles[player]
-	if p then
-		p.Deaths += 1
-	end
-end
-
-function DataService.grantAbility(player: Player, abilityId: string): boolean
-	local p = profiles[player]
-	if not p then
+function DataService.HasItem(player, itemId)
+	local data = playerData[player.UserId]
+	if not data then
 		return false
 	end
-	if p.OwnedAbilities[abilityId] then
-		return false
-	end
-	p.OwnedAbilities[abilityId] = true
-	return true
-end
-
-function DataService.isOwned(player: Player, abilityId: string): boolean
-	local p = profiles[player]
-	if not p then
-		return false
-	end
-	return p.OwnedAbilities[abilityId] == true
-end
-
-function DataService.setEquipped(player: Player, equipped: { string })
-	local p = profiles[player]
-	if p then
-		p.EquippedAbilities = equipped
-	end
-end
-
--- Periodic autosave every 2 minutes
-task.spawn(function()
-	while true do
-		task.wait(120)
-		for _, player in ipairs(Players:GetPlayers()) do
-			DataService.save(player)
+	for _, id in ipairs(data.inventory) do
+		if id == itemId then
+			return true
 		end
 	end
-end)
+	return false
+end
+
+function DataService.SetEquipped(player, slot, itemId)
+	local data = playerData[player.UserId]
+	if not data then
+		return
+	end
+	data.equipped[slot] = itemId
+end
+
+function DataService.GetEquipped(player)
+	local data = playerData[player.UserId]
+	if not data then
+		return {}
+	end
+	return data.equipped
+end
+
+function DataService.SetSetting(player, key, value)
+	local data = playerData[player.UserId]
+	if not data then
+		return
+	end
+	if data.settings[key] ~= nil then
+		data.settings[key] = value
+	end
+end
+
+function DataService.GetSettings(player)
+	local data = playerData[player.UserId]
+	if not data then
+		return DEFAULT_DATA.settings
+	end
+	return data.settings
+end
 
 return DataService
