@@ -1,18 +1,20 @@
 --[[
 	Server Bootstrap
 	Creates remotes then starts all services.
+	Prints warnings for any missing parts.
 ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 
+print("[SummitKit] Server starting...")
+
 -- Create remote folder (server only)
 local remoteFolder = Instance.new("Folder")
 remoteFolder.Name = "SummitRemotes"
 remoteFolder.Parent = ReplicatedStorage
 
--- RemoteEvents
 local function createEvent(name)
 	local remote = Instance.new("RemoteEvent")
 	remote.Name = name
@@ -20,7 +22,6 @@ local function createEvent(name)
 	return remote
 end
 
--- RemoteFunctions
 local function createFunc(name)
 	local remote = Instance.new("RemoteFunction")
 	remote.Name = name
@@ -42,10 +43,11 @@ local Remotes = {
 	GetInventory = createFunc("GetInventory"),
 }
 
+print("[SummitKit] Remotes created.")
+
 -- Load services
 local Server = ServerScriptService:WaitForChild("Server")
 local DataService = require(Server:WaitForChild("DataService"))
-local MapBuilder = require(Server:WaitForChild("MapBuilder"))
 local CheckpointService = require(Server:WaitForChild("CheckpointService"))
 local SummitService = require(Server:WaitForChild("SummitService"))
 local KillPartService = require(Server:WaitForChild("KillPartService"))
@@ -53,8 +55,7 @@ local OverheadService = require(Server:WaitForChild("OverheadService"))
 local ShopService = require(Server:WaitForChild("ShopService"))
 local EmoteService = require(Server:WaitForChild("EmoteService"))
 
--- Init order matters: MapBuilder first so parts exist
-MapBuilder.Init()
+-- Init services
 DataService.Init()
 CheckpointService.Init(Remotes)
 SummitService.Init(Remotes)
@@ -68,7 +69,6 @@ Players.PlayerAdded:Connect(function(player)
 	DataService.LoadPlayer(player)
 	OverheadService.SetupPlayer(player)
 
-	-- Send initial coins
 	task.wait(1)
 	Remotes.UpdateCoins:FireClient(player, DataService.GetCoins(player))
 end)
@@ -82,3 +82,5 @@ game:BindToClose(function()
 		DataService.SavePlayer(player)
 	end
 end)
+
+print("[SummitKit] Server ready! All services loaded.")
