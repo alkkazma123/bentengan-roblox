@@ -39,6 +39,8 @@ local Remotes = {
 	UnequipItem = createEvent("UnequipItem"),
 	UpdateSetting = createEvent("UpdateSetting"),
 	PlayEmote = createEvent("PlayEmote"),
+	ApplyAvatar = createEvent("ApplyAvatar"),
+	ResetAvatar = createEvent("ResetAvatar"),
 	BuyItem = createFunc("BuyItem"),
 	GetInventory = createFunc("GetInventory"),
 }
@@ -54,6 +56,7 @@ local KillPartService = require(Server:WaitForChild("KillPartService"))
 local OverheadService = require(Server:WaitForChild("OverheadService"))
 local ShopService = require(Server:WaitForChild("ShopService"))
 local EmoteService = require(Server:WaitForChild("EmoteService"))
+local AvatarService = require(Server:WaitForChild("AvatarService"))
 
 -- Init services
 DataService.Init()
@@ -63,6 +66,7 @@ KillPartService.Init(Remotes)
 OverheadService.Init(Remotes)
 ShopService.Init(Remotes)
 EmoteService.Init(Remotes)
+AvatarService.Init(Remotes)
 
 -- Player lifecycle
 Players.PlayerAdded:Connect(function(player)

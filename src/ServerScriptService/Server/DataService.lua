@@ -1,5 +1,6 @@
 --[[
 	DataService - Player data persistence
+	Saves: summits, coins, inventory, equipped, settings, lastCheckpoint
 ]]
 
 local DataStoreService = game:GetService("DataStoreService")
@@ -12,7 +13,7 @@ local dataStore = nil
 
 if not RunService:IsStudio() then
 	local ok, store = pcall(function()
-		return DataStoreService:GetDataStore("SummitKit_v1")
+		return DataStoreService:GetDataStore("SummitKit_v2")
 	end)
 	if ok then
 		dataStore = store
@@ -25,6 +26,7 @@ local DEFAULT = {
 	inventory = {},
 	equipped = { trail = "", aura = "" },
 	settings = { hidePlayers = false, hideAura = false, hideTrail = false },
+	lastCheckpoint = 0,
 }
 
 local function deepCopy(t)
@@ -50,6 +52,9 @@ function DataService.LoadPlayer(player)
 		end)
 		if ok and result then
 			data = result
+			print("[DataService] Loaded data for " .. player.Name)
+		else
+			print("[DataService] No saved data for " .. player.Name .. ", using defaults")
 		end
 	end
 
@@ -92,9 +97,14 @@ function DataService.SavePlayer(player)
 		return
 	end
 	if dataStore then
-		pcall(function()
+		local ok, err = pcall(function()
 			dataStore:SetAsync("player_" .. player.UserId, data)
 		end)
+		if ok then
+			print("[DataService] Saved data for " .. player.Name)
+		else
+			warn("[DataService] Failed to save data for " .. player.Name .. ": " .. tostring(err))
+		end
 	end
 	playerData[player.UserId] = nil
 end
@@ -106,6 +116,18 @@ end
 function DataService.GetCoins(player)
 	local data = playerData[player.UserId]
 	return data and data.coins or 0
+end
+
+function DataService.GetLastCheckpoint(player)
+	local data = playerData[player.UserId]
+	return data and data.lastCheckpoint or 0
+end
+
+function DataService.SetLastCheckpoint(player, index)
+	local data = playerData[player.UserId]
+	if data then
+		data.lastCheckpoint = index
+	end
 end
 
 function DataService.AddSummits(player, amount)

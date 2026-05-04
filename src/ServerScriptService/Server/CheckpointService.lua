@@ -1,6 +1,8 @@
 --[[
 	CheckpointService - Tracks player checkpoints
-	On respawn: teleports to last checkpoint (or start if none/reset)
+	Saves last checkpoint to DataStore.
+	On login: player spawns at last saved checkpoint.
+	On respawn: teleports to last checkpoint (or start if reset).
 ]]
 
 local Players = game:GetService("Players")
@@ -14,13 +16,17 @@ local CoinConfig = require(Shared:WaitForChild("CoinConfig"))
 local CheckpointService = {}
 
 local playerCheckpoints = {}
+local checkpointParts = {}
 local Remotes = nil
 local startCFrame = CFrame.new(0, 10, 0)
 
 function CheckpointService.GetSpawnCFrame(player)
 	local data = playerCheckpoints[player.UserId]
-	if data and data.cframe then
-		return data.cframe + Vector3.new(0, 3, 0)
+	if data and data.index > 0 then
+		local cp = checkpointParts[data.index]
+		if cp then
+			return cp.CFrame + Vector3.new(0, 3, 0)
+		end
 	end
 	return startCFrame + Vector3.new(0, 3, 0)
 end
@@ -32,6 +38,9 @@ end
 
 function CheckpointService.ResetCheckpoint(player)
 	playerCheckpoints[player.UserId] = nil
+	local Server = ServerScriptService:WaitForChild("Server")
+	local DataService = require(Server:WaitForChild("DataService"))
+	DataService.SetLastCheckpoint(player, 0)
 end
 
 function CheckpointService.Init(remotes)
@@ -61,7 +70,7 @@ function CheckpointService.Init(remotes)
 			if not player then
 				return
 			end
-			playerCheckpoints[player.UserId] = { index = 0, cframe = startPart.CFrame }
+			playerCheckpoints[player.UserId] = { index = 0 }
 		end)
 		print("[CheckpointService] Start part found.")
 	else
@@ -77,6 +86,7 @@ function CheckpointService.Init(remotes)
 		end
 		if cp then
 			foundCount = foundCount + 1
+			checkpointParts[i] = cp
 			local idx = i
 			cp.Touched:Connect(function(hit)
 				local player = Players:GetPlayerFromCharacter(hit.Parent)
@@ -85,7 +95,8 @@ function CheckpointService.Init(remotes)
 				end
 				local current = CheckpointService.GetCheckpointIndex(player)
 				if idx > current then
-					playerCheckpoints[player.UserId] = { index = idx, cframe = cp.CFrame }
+					playerCheckpoints[player.UserId] = { index = idx }
+					DataService.SetLastCheckpoint(player, idx)
 					Remotes.CheckpointReached:FireClient(player, idx)
 					DataService.AddCoins(player, CoinConfig.CoinsPerCheckpoint)
 					Remotes.UpdateCoins:FireClient(player, DataService.GetCoins(player))
@@ -99,8 +110,16 @@ function CheckpointService.Init(remotes)
 
 	print("[CheckpointService] Found " .. foundCount .. "/" .. CheckpointConfig.TotalCheckpoints .. " checkpoints.")
 
-	-- Respawn handler: teleport to last checkpoint or start
+	-- Respawn + login handler
 	Players.PlayerAdded:Connect(function(player)
+		-- Wait for data to load
+		task.wait(1.5)
+		local savedCp = DataService.GetLastCheckpoint(player)
+		if savedCp > 0 then
+			playerCheckpoints[player.UserId] = { index = savedCp }
+			print("[CheckpointService] " .. player.Name .. " resuming at Checkpoint_" .. savedCp)
+		end
+
 		player.CharacterAdded:Connect(function(character)
 			task.wait(0.2)
 			local hrp = character:WaitForChild("HumanoidRootPart", 5)

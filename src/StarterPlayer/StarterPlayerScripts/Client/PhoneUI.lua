@@ -54,18 +54,18 @@ function PhoneUI.Init()
 	end
 	task.defer(updateScale)
 
-	-- Coin Display (center-left)
+	-- Coin Display (center-left, bigger)
 	local coinFrame = Instance.new("Frame")
 	coinFrame.Name = "CoinDisplay"
-	coinFrame.Size = UDim2.new(0, 140, 0, 36)
-	coinFrame.Position = UDim2.new(0, 14, 0.5, -18)
+	coinFrame.Size = UDim2.new(0, 180, 0, 48)
+	coinFrame.Position = UDim2.new(0, 14, 0.5, -24)
 	coinFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
 	coinFrame.BackgroundTransparency = 0.2
 	coinFrame.Parent = screenGui
 	coinFrame.ZIndex = 10
 
 	local coinCorner = Instance.new("UICorner")
-	coinCorner.CornerRadius = UDim.new(0, 18)
+	coinCorner.CornerRadius = UDim.new(0, 24)
 	coinCorner.Parent = coinFrame
 
 	local coinStroke = Instance.new("UIStroke")
@@ -75,11 +75,11 @@ function PhoneUI.Init()
 
 	local coinIcon = Instance.new("TextLabel")
 	coinIcon.Name = "Icon"
-	coinIcon.Size = UDim2.new(0, 30, 1, 0)
-	coinIcon.Position = UDim2.new(0, 6, 0, 0)
+	coinIcon.Size = UDim2.new(0, 36, 1, 0)
+	coinIcon.Position = UDim2.new(0, 8, 0, 0)
 	coinIcon.BackgroundTransparency = 1
-	coinIcon.Text = "COIN"
-	coinIcon.TextSize = 9
+	coinIcon.Text = "\u{1FA99}"
+	coinIcon.TextSize = 22
 	coinIcon.TextColor3 = Color3.fromRGB(255, 215, 0)
 	coinIcon.Font = Enum.Font.GothamBold
 	coinIcon.Parent = coinFrame
@@ -87,12 +87,12 @@ function PhoneUI.Init()
 
 	coinLabel = Instance.new("TextLabel")
 	coinLabel.Name = "Amount"
-	coinLabel.Size = UDim2.new(1, -42, 1, 0)
-	coinLabel.Position = UDim2.new(0, 38, 0, 0)
+	coinLabel.Size = UDim2.new(1, -50, 1, 0)
+	coinLabel.Position = UDim2.new(0, 46, 0, 0)
 	coinLabel.BackgroundTransparency = 1
 	coinLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 	coinLabel.Text = "0"
-	coinLabel.TextSize = 16
+	coinLabel.TextSize = 20
 	coinLabel.Font = Enum.Font.GothamBold
 	coinLabel.TextXAlignment = Enum.TextXAlignment.Left
 	coinLabel.Parent = coinFrame
@@ -122,18 +122,18 @@ function PhoneUI.Init()
 	-- Toggle Button (top center, same level as Roblox bar)
 	local toggle = Instance.new("TextButton")
 	toggle.Name = "PhoneToggle"
-	toggle.Size = UDim2.new(0, 44, 0, 44)
-	toggle.Position = UDim2.new(0.5, -22, 0, 2)
+	toggle.Size = UDim2.new(0, 56, 0, 56)
+	toggle.Position = UDim2.new(0.5, -28, 0, 2)
 	toggle.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
 	toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
 	toggle.Text = "\u{1F4F1}"
-	toggle.TextSize = 20
+	toggle.TextSize = 26
 	toggle.Font = Enum.Font.GothamBold
 	toggle.Parent = screenGui
 	toggle.ZIndex = 10
 
 	local toggleCorner = Instance.new("UICorner")
-	toggleCorner.CornerRadius = UDim.new(0, 22)
+	toggleCorner.CornerRadius = UDim.new(0, 28)
 	toggleCorner.Parent = toggle
 
 	local toggleStroke = Instance.new("UIStroke")
