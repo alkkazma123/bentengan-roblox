@@ -1,6 +1,5 @@
 --[[
-	SummitService
-	Handles the summit/finish part - awards summits and coins when touched.
+	SummitService - Awards summits when player touches Finish
 ]]
 
 local Players = game:GetService("Players")
@@ -10,22 +9,25 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local SummitConfig = require(Shared:WaitForChild("SummitConfig"))
 local CoinConfig = require(Shared:WaitForChild("CoinConfig"))
-local Remotes = require(Shared:WaitForChild("Remotes"))
 
 local SummitService = {}
 
 local cooldowns = {}
 
-function SummitService.Init()
-	local checkpointsFolder = workspace:FindFirstChild("Checkpoints")
-	if not checkpointsFolder then
+function SummitService.Init(remotes)
+	local folder = workspace:WaitForChild("Checkpoints", 10)
+	if not folder then
 		return
 	end
 
-	local finishPart = checkpointsFolder:FindFirstChild("Finish")
+	local finishPart = folder:FindFirstChild("Finish")
 	if not finishPart then
 		return
 	end
+
+	local Server = ServerScriptService:WaitForChild("Server")
+	local DataService = require(Server:WaitForChild("DataService"))
+	local CheckpointService = require(Server:WaitForChild("CheckpointService"))
 
 	finishPart.Touched:Connect(function(hit)
 		local player = Players:GetPlayerFromCharacter(hit.Parent)
@@ -39,25 +41,24 @@ function SummitService.Init()
 		end
 		cooldowns[player.UserId] = now
 
-		local Server = ServerScriptService:FindFirstChild("Server")
-		local DataService = require(Server:FindFirstChild("DataService"))
-		local CheckpointService = require(Server:FindFirstChild("CheckpointService"))
-
 		DataService.AddSummits(player, SummitConfig.SummitsPerFinish)
 		DataService.AddCoins(player, CoinConfig.CoinsPerSummit)
 
 		local data = DataService.GetData(player)
-		Remotes.SummitReached:FireClient(player, data.summits)
-		Remotes.UpdateCoins:FireClient(player, data.coins)
-		Remotes.UpdateOverhead:FireAllClients(player, data.summits)
+		local summits = data and data.summits or 0
+		remotes.SummitReached:FireClient(player, summits)
+		remotes.UpdateCoins:FireClient(player, DataService.GetCoins(player))
+		remotes.UpdateOverhead:FireAllClients(player, summits)
 
-		CheckpointService.ResetPlayer(player)
+		CheckpointService.ResetCheckpoint(player)
 
-		if SummitConfig.TeleportToStartAfterSummit then
+		if SummitConfig.TeleportToStart then
 			task.delay(SummitConfig.TeleportDelay, function()
-				if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-					local spawnPos = CheckpointService.GetSpawnPosition(player)
-					player.Character.HumanoidRootPart.CFrame = CFrame.new(spawnPos)
+				if player.Character then
+					local hrp = player.Character:FindFirstChild("HumanoidRootPart")
+					if hrp then
+						hrp.CFrame = CheckpointService.GetSpawnCFrame(player)
+					end
 				end
 			end)
 		end

@@ -1,6 +1,5 @@
 --[[
-	DataService
-	Handles player data persistence (summits, coins, inventory, settings).
+	DataService - Player data persistence
 ]]
 
 local DataStoreService = game:GetService("DataStoreService")
@@ -8,56 +7,61 @@ local RunService = game:GetService("RunService")
 
 local DataService = {}
 
-local DATA_KEY = "SummitData_v1"
 local playerData = {}
-
 local dataStore = nil
+
 if not RunService:IsStudio() then
-	dataStore = DataStoreService:GetDataStore("SummitGameStore")
+	local ok, store = pcall(function()
+		return DataStoreService:GetDataStore("SummitKit_v1")
+	end)
+	if ok then
+		dataStore = store
+	end
 end
 
-local DEFAULT_DATA = {
+local DEFAULT = {
 	summits = 0,
 	coins = 0,
 	inventory = {},
-	equipped = { trail = nil, aura = nil },
+	equipped = { trail = "", aura = "" },
 	settings = { hidePlayers = false, hideAura = false, hideTrail = false },
 }
+
+local function deepCopy(t)
+	local copy = {}
+	for k, v in pairs(t) do
+		if type(v) == "table" then
+			copy[k] = deepCopy(v)
+		else
+			copy[k] = v
+		end
+	end
+	return copy
+end
 
 function DataService.Init() end
 
 function DataService.LoadPlayer(player)
 	local data = nil
+
 	if dataStore then
-		local success, result = pcall(function()
-			return dataStore:GetAsync(DATA_KEY .. "_" .. player.UserId)
+		local ok, result = pcall(function()
+			return dataStore:GetAsync("player_" .. player.UserId)
 		end)
-		if success and result then
+		if ok and result then
 			data = result
 		end
 	end
 
 	if not data then
-		data = {}
-		for k, v in pairs(DEFAULT_DATA) do
-			if type(v) == "table" then
-				data[k] = {}
-				for k2, v2 in pairs(v) do
-					data[k][k2] = v2
-				end
-			else
-				data[k] = v
-			end
-		end
+		data = deepCopy(DEFAULT)
 	end
 
-	for k, v in pairs(DEFAULT_DATA) do
+	-- Fill missing keys
+	for k, v in pairs(DEFAULT) do
 		if data[k] == nil then
 			if type(v) == "table" then
-				data[k] = {}
-				for k2, v2 in pairs(v) do
-					data[k][k2] = v2
-				end
+				data[k] = deepCopy(v)
 			else
 				data[k] = v
 			end
@@ -66,6 +70,7 @@ function DataService.LoadPlayer(player)
 
 	playerData[player.UserId] = data
 
+	-- Leaderstats
 	local leaderstats = Instance.new("Folder")
 	leaderstats.Name = "leaderstats"
 	leaderstats.Parent = player
@@ -88,7 +93,7 @@ function DataService.SavePlayer(player)
 	end
 	if dataStore then
 		pcall(function()
-			dataStore:SetAsync(DATA_KEY .. "_" .. player.UserId, data)
+			dataStore:SetAsync("player_" .. player.UserId, data)
 		end)
 	end
 	playerData[player.UserId] = nil
@@ -98,17 +103,22 @@ function DataService.GetData(player)
 	return playerData[player.UserId]
 end
 
+function DataService.GetCoins(player)
+	local data = playerData[player.UserId]
+	return data and data.coins or 0
+end
+
 function DataService.AddSummits(player, amount)
 	local data = playerData[player.UserId]
 	if not data then
 		return
 	end
 	data.summits = data.summits + amount
-	local leaderstats = player:FindFirstChild("leaderstats")
-	if leaderstats then
-		local val = leaderstats:FindFirstChild("Summits")
-		if val then
-			val.Value = data.summits
+	local ls = player:FindFirstChild("leaderstats")
+	if ls then
+		local v = ls:FindFirstChild("Summits")
+		if v then
+			v.Value = data.summits
 		end
 	end
 end
@@ -119,21 +129,13 @@ function DataService.AddCoins(player, amount)
 		return
 	end
 	data.coins = data.coins + amount
-	local leaderstats = player:FindFirstChild("leaderstats")
-	if leaderstats then
-		local val = leaderstats:FindFirstChild("Coins")
-		if val then
-			val.Value = data.coins
+	local ls = player:FindFirstChild("leaderstats")
+	if ls then
+		local v = ls:FindFirstChild("Coins")
+		if v then
+			v.Value = data.coins
 		end
 	end
-end
-
-function DataService.GetCoins(player)
-	local data = playerData[player.UserId]
-	if not data then
-		return 0
-	end
-	return data.coins
 end
 
 function DataService.SpendCoins(player, amount)
@@ -145,22 +147,14 @@ function DataService.SpendCoins(player, amount)
 		return false
 	end
 	data.coins = data.coins - amount
-	local leaderstats = player:FindFirstChild("leaderstats")
-	if leaderstats then
-		local val = leaderstats:FindFirstChild("Coins")
-		if val then
-			val.Value = data.coins
+	local ls = player:FindFirstChild("leaderstats")
+	if ls then
+		local v = ls:FindFirstChild("Coins")
+		if v then
+			v.Value = data.coins
 		end
 	end
 	return true
-end
-
-function DataService.AddToInventory(player, itemId)
-	local data = playerData[player.UserId]
-	if not data then
-		return
-	end
-	table.insert(data.inventory, itemId)
 end
 
 function DataService.HasItem(player, itemId)
@@ -176,6 +170,14 @@ function DataService.HasItem(player, itemId)
 	return false
 end
 
+function DataService.AddToInventory(player, itemId)
+	local data = playerData[player.UserId]
+	if not data then
+		return
+	end
+	table.insert(data.inventory, itemId)
+end
+
 function DataService.SetEquipped(player, slot, itemId)
 	local data = playerData[player.UserId]
 	if not data then
@@ -187,27 +189,9 @@ end
 function DataService.GetEquipped(player)
 	local data = playerData[player.UserId]
 	if not data then
-		return {}
+		return { trail = "", aura = "" }
 	end
 	return data.equipped
-end
-
-function DataService.SetSetting(player, key, value)
-	local data = playerData[player.UserId]
-	if not data then
-		return
-	end
-	if data.settings[key] ~= nil then
-		data.settings[key] = value
-	end
-end
-
-function DataService.GetSettings(player)
-	local data = playerData[player.UserId]
-	if not data then
-		return DEFAULT_DATA.settings
-	end
-	return data.settings
 end
 
 return DataService

@@ -1,6 +1,5 @@
 --[[
-	OverheadService
-	Creates and manages overhead BillboardGui showing username, summits, and title.
+	OverheadService - Creates BillboardGui overhead on players
 ]]
 
 local ServerScriptService = game:GetService("ServerScriptService")
@@ -8,26 +7,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local TitleConfig = require(Shared:WaitForChild("TitleConfig"))
-local Remotes = require(Shared:WaitForChild("Remotes"))
 
 local OverheadService = {}
 
-function OverheadService.Init()
-	Remotes.UpdateOverhead.OnServerEvent:Connect(function() end)
-end
-
-function OverheadService.SetupPlayer(player)
-	player.CharacterAdded:Connect(function(character)
-		task.wait(0.5)
-		OverheadService.CreateOverhead(player, character)
-	end)
-
-	if player.Character then
-		OverheadService.CreateOverhead(player, player.Character)
-	end
-end
-
-function OverheadService.CreateOverhead(player, character)
+local function createBillboard(player, character)
 	local head = character:WaitForChild("Head", 5)
 	if not head then
 		return
@@ -38,30 +21,29 @@ function OverheadService.CreateOverhead(player, character)
 		existing:Destroy()
 	end
 
-	local Server = ServerScriptService:FindFirstChild("Server")
-	local DataService = require(Server:FindFirstChild("DataService"))
+	local Server = ServerScriptService:WaitForChild("Server")
+	local DataService = require(Server:WaitForChild("DataService"))
 	local data = DataService.GetData(player)
 	local summits = data and data.summits or 0
 	local title, titleColor = TitleConfig.GetTitle(summits)
 
-	local billboard = Instance.new("BillboardGui")
-	billboard.Name = "SummitOverhead"
-	billboard.Size = UDim2.new(0, 200, 0, 80)
-	billboard.StudsOffset = Vector3.new(0, 2.5, 0)
-	billboard.AlwaysOnTop = true
-	billboard.MaxDistance = 50
-	billboard.Parent = head
+	local bb = Instance.new("BillboardGui")
+	bb.Name = "SummitOverhead"
+	bb.Size = UDim2.new(0, 200, 0, 80)
+	bb.StudsOffset = Vector3.new(0, 2.5, 0)
+	bb.AlwaysOnTop = true
+	bb.MaxDistance = 50
+	bb.Parent = head
 
 	local nameLabel = Instance.new("TextLabel")
 	nameLabel.Name = "Username"
 	nameLabel.Size = UDim2.new(1, 0, 0.35, 0)
-	nameLabel.Position = UDim2.new(0, 0, 0, 0)
 	nameLabel.BackgroundTransparency = 1
 	nameLabel.Text = player.DisplayName
 	nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 	nameLabel.TextScaled = true
 	nameLabel.Font = Enum.Font.GothamBold
-	nameLabel.Parent = billboard
+	nameLabel.Parent = bb
 
 	local summitLabel = Instance.new("TextLabel")
 	summitLabel.Name = "Summits"
@@ -72,7 +54,7 @@ function OverheadService.CreateOverhead(player, character)
 	summitLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 	summitLabel.TextScaled = true
 	summitLabel.Font = Enum.Font.Gotham
-	summitLabel.Parent = billboard
+	summitLabel.Parent = bb
 
 	local titleLabel = Instance.new("TextLabel")
 	titleLabel.Name = "Title"
@@ -83,7 +65,19 @@ function OverheadService.CreateOverhead(player, character)
 	titleLabel.TextColor3 = titleColor
 	titleLabel.TextScaled = true
 	titleLabel.Font = Enum.Font.GothamBold
-	titleLabel.Parent = billboard
+	titleLabel.Parent = bb
 end
+
+function OverheadService.SetupPlayer(player)
+	player.CharacterAdded:Connect(function(character)
+		task.wait(0.5)
+		createBillboard(player, character)
+	end)
+	if player.Character then
+		createBillboard(player, player.Character)
+	end
+end
+
+function OverheadService.Init(_remotes) end
 
 return OverheadService

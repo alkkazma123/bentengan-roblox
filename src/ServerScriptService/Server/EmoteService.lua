@@ -1,6 +1,5 @@
 --[[
-	EmoteService
-	Handles playing emote animations on the server.
+	EmoteService - Plays emote animations
 ]]
 
 local Players = game:GetService("Players")
@@ -8,21 +7,20 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local EmoteList = require(Shared:WaitForChild("EmoteList"))
-local Remotes = require(Shared:WaitForChild("Remotes"))
 
 local EmoteService = {}
 
 local activeEmotes = {}
 
-local function getEmoteId(emoteName)
+local function getAnimId(emoteName)
 	for _, emote in ipairs(EmoteList.Emotes) do
 		if emote.name == emoteName then
 			return emote.id
 		end
 	end
-	local emotesFolder = ReplicatedStorage:FindFirstChild("Emotes")
-	if emotesFolder then
-		local anim = emotesFolder:FindFirstChild(emoteName)
+	local folder = ReplicatedStorage:FindFirstChild("Emotes")
+	if folder then
+		local anim = folder:FindFirstChild(emoteName)
 		if anim and anim:IsA("Animation") then
 			return anim.AnimationId
 		end
@@ -30,16 +28,17 @@ local function getEmoteId(emoteName)
 	return nil
 end
 
-function EmoteService.Init()
-	Remotes.PlayEmote.OnServerEvent:Connect(function(player, emoteName)
+function EmoteService.Init(remotes)
+	remotes.PlayEmote.OnServerEvent:Connect(function(player, emoteName)
 		if not player.Character then
 			return
 		end
-		local humanoid = player.Character:FindFirstChild("Humanoid")
+		local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
 		if not humanoid then
 			return
 		end
 
+		-- Stop current
 		if activeEmotes[player.UserId] then
 			activeEmotes[player.UserId]:Stop()
 			activeEmotes[player.UserId] = nil
@@ -49,7 +48,7 @@ function EmoteService.Init()
 			return
 		end
 
-		local animId = getEmoteId(emoteName)
+		local animId = getAnimId(emoteName)
 		if not animId then
 			return
 		end
@@ -67,14 +66,15 @@ function EmoteService.Init()
 		track:Play()
 		activeEmotes[player.UserId] = track
 
-		local connection
-		connection = humanoid.Running:Connect(function(speed)
+		-- Stop on move
+		local conn
+		conn = humanoid.Running:Connect(function(speed)
 			if speed > 0.5 then
 				if activeEmotes[player.UserId] then
 					activeEmotes[player.UserId]:Stop()
 					activeEmotes[player.UserId] = nil
 				end
-				connection:Disconnect()
+				conn:Disconnect()
 			end
 		end)
 	end)

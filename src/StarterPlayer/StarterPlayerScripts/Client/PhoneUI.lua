@@ -1,8 +1,5 @@
 --[[
-	PhoneUI
-	Main phone menu system. Toggle button at top center (aligned with Roblox top bar).
-	Phone frame with swipeable pages: Shop, Music, Emotes, Settings.
-	All UI uses AutoScale for device adaptation.
+	PhoneUI - Phone menu with swipeable tabs + coin display
 ]]
 
 local Players = game:GetService("Players")
@@ -12,30 +9,28 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
-local playerScripts = player:WaitForChild("PlayerScripts")
-local Client = playerScripts:WaitForChild("Client")
 
-local ShopUI = require(Client:WaitForChild("ShopUI"))
-local MusicPlayerUI = require(Client:WaitForChild("MusicPlayerUI"))
-local EmoteUI = require(Client:WaitForChild("EmoteUI"))
-local SettingsUI = require(Client:WaitForChild("SettingsUI"))
+local scriptFolder = script.Parent
 
-local Shared = ReplicatedStorage:WaitForChild("Shared")
-local Remotes = require(Shared:WaitForChild("Remotes"))
+local ShopUI = require(scriptFolder:WaitForChild("ShopUI"))
+local MusicPlayerUI = require(scriptFolder:WaitForChild("MusicPlayerUI"))
+local EmoteUI = require(scriptFolder:WaitForChild("EmoteUI"))
+local SettingsUI = require(scriptFolder:WaitForChild("SettingsUI"))
+
+local remoteFolder = ReplicatedStorage:WaitForChild("SummitRemotes")
+local UpdateCoins = remoteFolder:WaitForChild("UpdateCoins")
 
 local PhoneUI = {}
 
 local screenGui = nil
 local phoneFrame = nil
-local toggleButton = nil
 local coinLabel = nil
 local isOpen = false
 local currentPage = 1
 local pages = {}
-local PHONE_POSITION_OPEN = UDim2.new(0.5, 0, 0.5, 0)
-local PHONE_POSITION_CLOSED = UDim2.new(0.5, 0, 1.5, 0)
 
-local function createScreenGui()
+function PhoneUI.Init()
+	-- ScreenGui
 	screenGui = Instance.new("ScreenGui")
 	screenGui.Name = "PhoneGui"
 	screenGui.ResetOnSpawn = false
@@ -43,26 +38,27 @@ local function createScreenGui()
 	screenGui.IgnoreGuiInset = true
 	screenGui.Parent = playerGui
 
-	-- AutoScale: UIScale adapts to screen size
+	-- AutoScale
 	local scale = Instance.new("UIScale")
 	scale.Name = "AutoScale"
 	scale.Parent = screenGui
-
 	local function updateScale()
-		local viewportSize = workspace.CurrentCamera.ViewportSize
-		local baseWidth = 1920
-		local ratio = math.clamp(viewportSize.X / baseWidth, 0.5, 1.5)
-		scale.Scale = ratio
+		local cam = workspace.CurrentCamera
+		if cam then
+			local ratio = math.clamp(cam.ViewportSize.X / 1920, 0.5, 1.5)
+			scale.Scale = ratio
+		end
 	end
-	workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateScale)
+	if workspace.CurrentCamera then
+		workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateScale)
+	end
 	task.defer(updateScale)
-end
 
-local function createCoinUI()
+	-- Coin Display (center-left)
 	local coinFrame = Instance.new("Frame")
 	coinFrame.Name = "CoinDisplay"
 	coinFrame.Size = UDim2.new(0, 140, 0, 36)
-	coinFrame.Position = UDim2.new(0, 12, 0, 42)
+	coinFrame.Position = UDim2.new(0, 14, 0.5, -18)
 	coinFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
 	coinFrame.BackgroundTransparency = 0.2
 	coinFrame.Parent = screenGui
@@ -79,8 +75,8 @@ local function createCoinUI()
 
 	local coinIcon = Instance.new("TextLabel")
 	coinIcon.Name = "Icon"
-	coinIcon.Size = UDim2.new(0, 30, 0, 30)
-	coinIcon.Position = UDim2.new(0, 6, 0.5, -15)
+	coinIcon.Size = UDim2.new(0, 30, 1, 0)
+	coinIcon.Position = UDim2.new(0, 6, 0, 0)
 	coinIcon.BackgroundTransparency = 1
 	coinIcon.Text = "COIN"
 	coinIcon.TextSize = 9
@@ -102,18 +98,16 @@ local function createCoinUI()
 	coinLabel.Parent = coinFrame
 	coinLabel.ZIndex = 11
 
-	-- Listen for coin updates
-	Remotes.UpdateCoins.OnClientEvent:Connect(function(amount)
+	UpdateCoins.OnClientEvent:Connect(function(amount)
 		if coinLabel then
 			coinLabel.Text = tostring(amount)
 		end
 	end)
 
-	-- Initial value from leaderstats
 	task.defer(function()
-		local leaderstats = player:WaitForChild("leaderstats", 10)
-		if leaderstats then
-			local coins = leaderstats:WaitForChild("Coins", 5)
+		local ls = player:WaitForChild("leaderstats", 10)
+		if ls then
+			local coins = ls:WaitForChild("Coins", 5)
 			if coins and coinLabel then
 				coinLabel.Text = tostring(coins.Value)
 				coins.Changed:Connect(function(val)
@@ -124,42 +118,38 @@ local function createCoinUI()
 			end
 		end
 	end)
-end
 
-local function createToggleButton()
-	-- Position aligned with Roblox top bar (GuiInset is ignored, so y=4 is top)
-	toggleButton = Instance.new("TextButton")
-	toggleButton.Name = "PhoneToggle"
-	toggleButton.Size = UDim2.new(0, 44, 0, 44)
-	toggleButton.Position = UDim2.new(0.5, -22, 0, 2)
-	toggleButton.AnchorPoint = Vector2.new(0, 0)
-	toggleButton.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-	toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-	toggleButton.Text = "TEL"
-	toggleButton.TextSize = 11
-	toggleButton.Font = Enum.Font.GothamBold
-	toggleButton.Parent = screenGui
-	toggleButton.ZIndex = 10
+	-- Toggle Button (top center, same level as Roblox bar)
+	local toggle = Instance.new("TextButton")
+	toggle.Name = "PhoneToggle"
+	toggle.Size = UDim2.new(0, 44, 0, 44)
+	toggle.Position = UDim2.new(0.5, -22, 0, 2)
+	toggle.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+	toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+	toggle.Text = "TEL"
+	toggle.TextSize = 11
+	toggle.Font = Enum.Font.GothamBold
+	toggle.Parent = screenGui
+	toggle.ZIndex = 10
 
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 22)
-	corner.Parent = toggleButton
+	local toggleCorner = Instance.new("UICorner")
+	toggleCorner.CornerRadius = UDim.new(0, 22)
+	toggleCorner.Parent = toggle
 
-	local stroke = Instance.new("UIStroke")
-	stroke.Color = Color3.fromRGB(80, 80, 100)
-	stroke.Thickness = 1.5
-	stroke.Parent = toggleButton
+	local toggleStroke = Instance.new("UIStroke")
+	toggleStroke.Color = Color3.fromRGB(80, 80, 100)
+	toggleStroke.Thickness = 1.5
+	toggleStroke.Parent = toggle
 
-	toggleButton.MouseButton1Click:Connect(function()
+	toggle.MouseButton1Click:Connect(function()
 		PhoneUI.Toggle()
 	end)
-end
 
-local function createPhoneFrame()
+	-- Phone Frame
 	phoneFrame = Instance.new("Frame")
 	phoneFrame.Name = "PhoneFrame"
 	phoneFrame.Size = UDim2.new(0, 320, 0, 520)
-	phoneFrame.Position = PHONE_POSITION_CLOSED
+	phoneFrame.Position = UDim2.new(0.5, 0, 1.5, 0)
 	phoneFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 	phoneFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 	phoneFrame.BorderSizePixel = 0
@@ -167,28 +157,23 @@ local function createPhoneFrame()
 	phoneFrame.Parent = screenGui
 	phoneFrame.ZIndex = 5
 
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 20)
-	corner.Parent = phoneFrame
+	local frameCorner = Instance.new("UICorner")
+	frameCorner.CornerRadius = UDim.new(0, 20)
+	frameCorner.Parent = phoneFrame
 
-	local stroke = Instance.new("UIStroke")
-	stroke.Color = Color3.fromRGB(60, 60, 60)
-	stroke.Thickness = 2
-	stroke.Parent = phoneFrame
+	local frameStroke = Instance.new("UIStroke")
+	frameStroke.Color = Color3.fromRGB(60, 60, 60)
+	frameStroke.Thickness = 2
+	frameStroke.Parent = phoneFrame
 
-	-- Top bar with page tabs
+	-- Top bar with tabs
 	local topBar = Instance.new("Frame")
 	topBar.Name = "TopBar"
 	topBar.Size = UDim2.new(1, 0, 0, 50)
-	topBar.Position = UDim2.new(0, 0, 0, 0)
 	topBar.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
 	topBar.BorderSizePixel = 0
 	topBar.Parent = phoneFrame
 	topBar.ZIndex = 6
-
-	local topCorner = Instance.new("UICorner")
-	topCorner.CornerRadius = UDim.new(0, 20)
-	topCorner.Parent = topBar
 
 	local tabNames = { "Shop", "Music", "Emotes", "Settings" }
 	local tabWidth = 1 / #tabNames
@@ -212,30 +197,29 @@ local function createPhoneFrame()
 		tabCorner.CornerRadius = UDim.new(0, 8)
 		tabCorner.Parent = tab
 
-		local pageIndex = i
 		tab.MouseButton1Click:Connect(function()
-			PhoneUI.GoToPage(pageIndex)
+			PhoneUI.GoToPage(i)
 		end)
 	end
 
-	-- Content area
-	local contentFrame = Instance.new("Frame")
-	contentFrame.Name = "Content"
-	contentFrame.Size = UDim2.new(1, 0, 1, -50)
-	contentFrame.Position = UDim2.new(0, 0, 0, 50)
-	contentFrame.BackgroundTransparency = 1
-	contentFrame.ClipsDescendants = true
-	contentFrame.Parent = phoneFrame
-	contentFrame.ZIndex = 5
+	-- Content
+	local content = Instance.new("Frame")
+	content.Name = "Content"
+	content.Size = UDim2.new(1, 0, 1, -50)
+	content.Position = UDim2.new(0, 0, 0, 50)
+	content.BackgroundTransparency = 1
+	content.ClipsDescendants = true
+	content.Parent = phoneFrame
+	content.ZIndex = 5
 
 	pages = {}
 	for i = 1, 4 do
 		local page = Instance.new("Frame")
 		page.Name = "Page_" .. i
 		page.Size = UDim2.new(1, 0, 1, 0)
-		page.Position = UDim2.new((i - 1), 0, 0, 0)
+		page.Position = UDim2.new(i - 1, 0, 0, 0)
 		page.BackgroundTransparency = 1
-		page.Parent = contentFrame
+		page.Parent = content
 		page.ZIndex = 5
 		pages[i] = page
 	end
@@ -244,11 +228,10 @@ local function createPhoneFrame()
 	MusicPlayerUI.Init(pages[2])
 	EmoteUI.Init(pages[3])
 	SettingsUI.Init(pages[4])
-end
 
-local function setupSwipe()
+	-- Swipe
 	local dragging = false
-	local dragStart = nil
+	local dragStart = 0
 
 	UserInputService.InputBegan:Connect(function(input)
 		if not isOpen then
@@ -259,14 +242,9 @@ local function setupSwipe()
 			or input.UserInputType == Enum.UserInputType.MouseButton1
 		then
 			local pos = input.Position
-			local phoneAbsPos = phoneFrame.AbsolutePosition
-			local phoneAbsSize = phoneFrame.AbsoluteSize
-			if
-				pos.X >= phoneAbsPos.X
-				and pos.X <= phoneAbsPos.X + phoneAbsSize.X
-				and pos.Y >= phoneAbsPos.Y + 50
-				and pos.Y <= phoneAbsPos.Y + phoneAbsSize.Y
-			then
+			local ap = phoneFrame.AbsolutePosition
+			local as = phoneFrame.AbsoluteSize
+			if pos.X >= ap.X and pos.X <= ap.X + as.X and pos.Y >= ap.Y + 50 and pos.Y <= ap.Y + as.Y then
 				dragging = true
 				dragStart = pos.X
 			end
@@ -299,16 +277,16 @@ function PhoneUI.GoToPage(pageIndex)
 	currentPage = pageIndex
 
 	for i, page in ipairs(pages) do
-		local targetPos = UDim2.new(i - pageIndex, 0, 0, 0)
+		local target = UDim2.new(i - pageIndex, 0, 0, 0)
 		TweenService:Create(page, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-			Position = targetPos,
+			Position = target,
 		}):Play()
 	end
 
+	-- Highlight active tab
 	local topBar = phoneFrame:FindFirstChild("TopBar")
 	if topBar then
-		local tabNames = { "Shop", "Music", "Emotes", "Settings" }
-		for i, name in ipairs(tabNames) do
+		for i, name in ipairs({ "Shop", "Music", "Emotes", "Settings" }) do
 			local tab = topBar:FindFirstChild("Tab_" .. name)
 			if tab then
 				tab.BackgroundColor3 = if i == pageIndex then Color3.fromRGB(60, 60, 70) else Color3.fromRGB(40, 40, 45)
@@ -319,18 +297,10 @@ end
 
 function PhoneUI.Toggle()
 	isOpen = not isOpen
-	local targetPos = if isOpen then PHONE_POSITION_OPEN else PHONE_POSITION_CLOSED
+	local target = if isOpen then UDim2.new(0.5, 0, 0.5, 0) else UDim2.new(0.5, 0, 1.5, 0)
 	TweenService:Create(phoneFrame, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-		Position = targetPos,
+		Position = target,
 	}):Play()
-end
-
-function PhoneUI.Init()
-	createScreenGui()
-	createCoinUI()
-	createToggleButton()
-	createPhoneFrame()
-	setupSwipe()
 end
 
 return PhoneUI

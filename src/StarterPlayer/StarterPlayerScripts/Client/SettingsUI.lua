@@ -1,16 +1,11 @@
 --[[
-	SettingsUI
-	Settings page inside the phone menu.
-	Options: hide players, hide aura, hide trail.
+	SettingsUI - Settings page in phone
 ]]
 
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Shared = ReplicatedStorage:WaitForChild("Shared")
-local Remotes = require(Shared:WaitForChild("Remotes"))
-
-local player = Players.LocalPlayer
+local remoteFolder = ReplicatedStorage:WaitForChild("SummitRemotes")
+local UpdateSetting = remoteFolder:WaitForChild("UpdateSetting")
 
 local SettingsUI = {}
 
@@ -20,162 +15,119 @@ local settings = {
 	hideTrail = false,
 }
 
-local function createToggle(name, label, _yOffset, parent)
-	local container = Instance.new("Frame")
-	container.Name = "Toggle_" .. name
-	container.Size = UDim2.new(1, -20, 0, 45)
-	container.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
-	container.BorderSizePixel = 0
-	container.Parent = parent
-	container.ZIndex = 6
-
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 8)
-	corner.Parent = container
-
-	local textLabel = Instance.new("TextLabel")
-	textLabel.Name = "Label"
-	textLabel.Size = UDim2.new(0.7, 0, 1, 0)
-	textLabel.Position = UDim2.new(0, 15, 0, 0)
-	textLabel.BackgroundTransparency = 1
-	textLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
-	textLabel.Text = label
-	textLabel.TextSize = 13
-	textLabel.TextXAlignment = Enum.TextXAlignment.Left
-	textLabel.Font = Enum.Font.Gotham
-	textLabel.Parent = container
-	textLabel.ZIndex = 7
-
-	local toggleBg = Instance.new("Frame")
-	toggleBg.Name = "ToggleBg"
-	toggleBg.Size = UDim2.new(0, 45, 0, 24)
-	toggleBg.Position = UDim2.new(1, -60, 0.5, -12)
-	toggleBg.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-	toggleBg.BorderSizePixel = 0
-	toggleBg.Parent = container
-	toggleBg.ZIndex = 7
-
-	local toggleCorner = Instance.new("UICorner")
-	toggleCorner.CornerRadius = UDim.new(0.5, 0)
-	toggleCorner.Parent = toggleBg
-
-	local knob = Instance.new("Frame")
-	knob.Name = "Knob"
-	knob.Size = UDim2.new(0, 20, 0, 20)
-	knob.Position = UDim2.new(0, 2, 0.5, -10)
-	knob.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
-	knob.Parent = toggleBg
-	knob.ZIndex = 8
-
-	local knobCorner = Instance.new("UICorner")
-	knobCorner.CornerRadius = UDim.new(0.5, 0)
-	knobCorner.Parent = knob
-
-	local btn = Instance.new("TextButton")
-	btn.Name = "ClickArea"
-	btn.Size = UDim2.new(1, 0, 1, 0)
-	btn.BackgroundTransparency = 1
-	btn.Text = ""
-	btn.Parent = container
-	btn.ZIndex = 9
-
-	local isOn = settings[name] or false
-
-	local function updateVisual()
-		if isOn then
-			toggleBg.BackgroundColor3 = Color3.fromRGB(30, 215, 96)
-			knob.Position = UDim2.new(1, -22, 0.5, -10)
-		else
-			toggleBg.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-			knob.Position = UDim2.new(0, 2, 0.5, -10)
-		end
-	end
-
-	updateVisual()
-
-	btn.MouseButton1Click:Connect(function()
-		isOn = not isOn
-		settings[name] = isOn
-		updateVisual()
-		Remotes.UpdateSetting:FireServer(name, isOn)
-		SettingsUI.ApplySetting(name, isOn)
-	end)
-
-	return container
-end
-
-function SettingsUI.ApplySetting(name, value)
-	if name == "hidePlayers" then
-		for _, otherPlayer in ipairs(Players:GetPlayers()) do
-			if otherPlayer ~= player and otherPlayer.Character then
-				for _, part in ipairs(otherPlayer.Character:GetDescendants()) do
-					if part:IsA("BasePart") or part:IsA("Decal") then
-						part.Transparency = if value then 1 else 0
-					elseif part:IsA("BillboardGui") or part:IsA("ParticleEmitter") or part:IsA("Trail") then
-						part.Enabled = not value
-					end
-				end
-			end
-		end
-	elseif name == "hideAura" then
-		for _, otherPlayer in ipairs(Players:GetPlayers()) do
-			if otherPlayer ~= player and otherPlayer.Character then
-				local hrp = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
-				if hrp then
-					local aura = hrp:FindFirstChild("SummitAura")
-					if aura then
-						aura.Enabled = not value
-					end
-				end
-			end
-		end
-	elseif name == "hideTrail" then
-		for _, otherPlayer in ipairs(Players:GetPlayers()) do
-			if otherPlayer ~= player and otherPlayer.Character then
-				local trail = otherPlayer.Character:FindFirstChild("SummitTrail")
-				if trail then
-					trail.Enabled = not value
-				end
-			end
-		end
-	end
-end
-
 function SettingsUI.Init(frame)
 	local title = Instance.new("TextLabel")
-	title.Name = "SettingsTitle"
-	title.Size = UDim2.new(1, 0, 0, 30)
-	title.Position = UDim2.new(0, 0, 0, 5)
+	title.Size = UDim2.new(1, 0, 0, 25)
 	title.BackgroundTransparency = 1
-	title.TextColor3 = Color3.fromRGB(255, 255, 255)
 	title.Text = "SETTINGS"
-	title.TextSize = 18
+	title.TextColor3 = Color3.fromRGB(255, 255, 255)
+	title.TextSize = 16
 	title.Font = Enum.Font.GothamBold
 	title.Parent = frame
 	title.ZIndex = 6
 
-	local scroll = Instance.new("ScrollingFrame")
-	scroll.Name = "SettingsScroll"
-	scroll.Size = UDim2.new(1, -10, 1, -45)
-	scroll.Position = UDim2.new(0, 5, 0, 40)
-	scroll.BackgroundTransparency = 1
-	scroll.ScrollBarThickness = 4
-	scroll.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
-	scroll.Parent = frame
-	scroll.ZIndex = 6
+	local settingsData = {
+		{ key = "hidePlayers", label = "Hide Players" },
+		{ key = "hideAura", label = "Hide Auras" },
+		{ key = "hideTrail", label = "Hide Trails" },
+	}
 
-	local listLayout = Instance.new("UIListLayout")
-	listLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	listLayout.Padding = UDim.new(0, 10)
-	listLayout.Parent = scroll
+	for i, s in ipairs(settingsData) do
+		local row = Instance.new("Frame")
+		row.Size = UDim2.new(1, -20, 0, 40)
+		row.Position = UDim2.new(0, 10, 0, 30 + (i - 1) * 50)
+		row.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+		row.Parent = frame
+		row.ZIndex = 6
 
-	createToggle("hidePlayers", "Hide Other Players", 0, scroll)
-	createToggle("hideAura", "Hide Auras", 0, scroll)
-	createToggle("hideTrail", "Hide Trails", 0, scroll)
+		local rowCorner = Instance.new("UICorner")
+		rowCorner.CornerRadius = UDim.new(0, 10)
+		rowCorner.Parent = row
 
-	listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-		scroll.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 10)
-	end)
+		local label = Instance.new("TextLabel")
+		label.Size = UDim2.new(0.6, 0, 1, 0)
+		label.Position = UDim2.new(0, 12, 0, 0)
+		label.BackgroundTransparency = 1
+		label.Text = s.label
+		label.TextColor3 = Color3.fromRGB(220, 220, 220)
+		label.TextSize = 13
+		label.Font = Enum.Font.Gotham
+		label.TextXAlignment = Enum.TextXAlignment.Left
+		label.Parent = row
+		label.ZIndex = 7
+
+		local toggleBg = Instance.new("TextButton")
+		toggleBg.Size = UDim2.new(0, 50, 0, 26)
+		toggleBg.Position = UDim2.new(1, -60, 0.5, -13)
+		toggleBg.BackgroundColor3 = Color3.fromRGB(80, 30, 30)
+		toggleBg.Text = ""
+		toggleBg.Parent = row
+		toggleBg.ZIndex = 7
+
+		local toggleCorner = Instance.new("UICorner")
+		toggleCorner.CornerRadius = UDim.new(1, 0)
+		toggleCorner.Parent = toggleBg
+
+		local knob = Instance.new("Frame")
+		knob.Size = UDim2.new(0, 20, 0, 20)
+		knob.Position = UDim2.new(0, 3, 0.5, -10)
+		knob.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+		knob.Parent = toggleBg
+		knob.ZIndex = 8
+
+		local knobCorner = Instance.new("UICorner")
+		knobCorner.CornerRadius = UDim.new(1, 0)
+		knobCorner.Parent = knob
+
+		local key = s.key
+		toggleBg.MouseButton1Click:Connect(function()
+			settings[key] = not settings[key]
+			if settings[key] then
+				toggleBg.BackgroundColor3 = Color3.fromRGB(30, 150, 80)
+				knob.Position = UDim2.new(1, -23, 0.5, -10)
+			else
+				toggleBg.BackgroundColor3 = Color3.fromRGB(80, 30, 30)
+				knob.Position = UDim2.new(0, 3, 0.5, -10)
+			end
+			UpdateSetting:FireServer(key, settings[key])
+			SettingsUI.ApplySetting(key, settings[key])
+		end)
+	end
+end
+
+function SettingsUI.ApplySetting(key, value)
+	local Players = game:GetService("Players")
+	local localPlayer = Players.LocalPlayer
+
+	for _, otherPlayer in ipairs(Players:GetPlayers()) do
+		if otherPlayer ~= localPlayer then
+			local character = otherPlayer.Character
+			if character then
+				if key == "hidePlayers" then
+					for _, part in ipairs(character:GetDescendants()) do
+						if part:IsA("BasePart") or part:IsA("Decal") then
+							part.Transparency = if value then 1 else 0
+						elseif part:IsA("BillboardGui") then
+							part.Enabled = not value
+						end
+					end
+				elseif key == "hideAura" then
+					local hrp = character:FindFirstChild("HumanoidRootPart")
+					if hrp then
+						local aura = hrp:FindFirstChild("SummitAura")
+						if aura then
+							aura.Enabled = not value
+						end
+					end
+				elseif key == "hideTrail" then
+					local trail = character:FindFirstChild("SummitTrail")
+					if trail then
+						trail.Enabled = not value
+					end
+				end
+			end
+		end
+	end
 end
 
 return SettingsUI

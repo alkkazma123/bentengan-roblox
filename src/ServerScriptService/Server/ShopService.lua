@@ -1,6 +1,5 @@
 --[[
-	ShopService
-	Handles buying, equipping, and unequipping shop items (trails and auras).
+	ShopService - Buy/equip/unequip shop items
 ]]
 
 local Players = game:GetService("Players")
@@ -9,118 +8,94 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local ShopConfig = require(Shared:WaitForChild("ShopConfig"))
-local Remotes = require(Shared:WaitForChild("Remotes"))
 
 local ShopService = {}
 
-local function findItem(itemId)
-	for _, category in ipairs(ShopConfig.Categories) do
-		for _, item in ipairs(category.items) do
-			if item.id == itemId then
-				return item, category.name
-			end
+local function applyTrail(character, item)
+	-- Remove old
+	local oldTrail = character:FindFirstChild("SummitTrail")
+	if oldTrail then
+		oldTrail:Destroy()
+	end
+	local hrp = character:FindFirstChild("HumanoidRootPart")
+	if hrp then
+		local a0 = hrp:FindFirstChild("TrailA0")
+		if a0 then
+			a0:Destroy()
 		end
 	end
-	return nil, nil
-end
+	local head = character:FindFirstChild("Head")
+	if head then
+		local a1 = head:FindFirstChild("TrailA1")
+		if a1 then
+			a1:Destroy()
+		end
+	end
 
-local function applyTrail(player, item)
-	if not player.Character then
+	if not item then
 		return
 	end
-	ShopService.RemoveTrail(player)
-
-	local hrp = player.Character:FindFirstChild("HumanoidRootPart")
-	local head = player.Character:FindFirstChild("Head")
+	hrp = character:FindFirstChild("HumanoidRootPart")
+	head = character:FindFirstChild("Head")
 	if not hrp or not head then
 		return
 	end
 
-	local attachment0 = Instance.new("Attachment")
-	attachment0.Name = "TrailAttach0"
-	attachment0.Parent = hrp
+	local a0 = Instance.new("Attachment")
+	a0.Name = "TrailA0"
+	a0.Parent = hrp
 
-	local attachment1 = Instance.new("Attachment")
-	attachment1.Name = "TrailAttach1"
-	attachment1.Parent = head
+	local a1 = Instance.new("Attachment")
+	a1.Name = "TrailA1"
+	a1.Parent = head
 
 	local trail = Instance.new("Trail")
 	trail.Name = "SummitTrail"
-	trail.Attachment0 = attachment0
-	trail.Attachment1 = attachment1
+	trail.Attachment0 = a0
+	trail.Attachment1 = a1
 	trail.Lifetime = 0.5
 	trail.MinLength = 0.1
-	trail.Color = ColorSequence.new(item.trailColor)
+	trail.Color = ColorSequence.new(item.color)
 	trail.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(1, 1) })
-	trail.Parent = player.Character
+	trail.Parent = character
 end
 
-local function applyAura(player, item)
-	if not player.Character then
+local function applyAura(character, item)
+	local hrp = character:FindFirstChild("HumanoidRootPart")
+	if hrp then
+		local old = hrp:FindFirstChild("SummitAura")
+		if old then
+			old:Destroy()
+		end
+	end
+
+	if not item then
 		return
 	end
-	ShopService.RemoveAura(player)
-
-	local hrp = player.Character:FindFirstChild("HumanoidRootPart")
+	hrp = character:FindFirstChild("HumanoidRootPart")
 	if not hrp then
 		return
 	end
 
-	local particle = Instance.new("ParticleEmitter")
-	particle.Name = "SummitAura"
-	particle.Color = ColorSequence.new(item.particleColor)
-	particle.Size = NumberSequence.new(item.particleSize or 2)
-	particle.Rate = 20
-	particle.Lifetime = NumberRange.new(0.5, 1.5)
-	particle.Speed = NumberRange.new(1, 3)
-	particle.SpreadAngle = Vector2.new(180, 180)
-	particle.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.3), NumberSequenceKeypoint.new(1, 1) })
-	particle.Parent = hrp
+	local p = Instance.new("ParticleEmitter")
+	p.Name = "SummitAura"
+	p.Color = ColorSequence.new(item.color)
+	p.Size = NumberSequence.new(2)
+	p.Rate = 20
+	p.Lifetime = NumberRange.new(0.5, 1.5)
+	p.Speed = NumberRange.new(1, 3)
+	p.SpreadAngle = Vector2.new(180, 180)
+	p.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.3), NumberSequenceKeypoint.new(1, 1) })
+	p.Parent = hrp
 end
 
-function ShopService.RemoveTrail(player)
-	if not player.Character then
-		return
-	end
-	local existing = player.Character:FindFirstChild("SummitTrail")
-	if existing then
-		existing:Destroy()
-	end
-	local hrp = player.Character:FindFirstChild("HumanoidRootPart")
-	if hrp then
-		local a = hrp:FindFirstChild("TrailAttach0")
-		if a then
-			a:Destroy()
-		end
-	end
-	local head = player.Character:FindFirstChild("Head")
-	if head then
-		local a = head:FindFirstChild("TrailAttach1")
-		if a then
-			a:Destroy()
-		end
-	end
-end
+function ShopService.Init(remotes)
+	local Server = ServerScriptService:WaitForChild("Server")
+	local DataService = require(Server:WaitForChild("DataService"))
 
-function ShopService.RemoveAura(player)
-	if not player.Character then
-		return
-	end
-	local hrp = player.Character:FindFirstChild("HumanoidRootPart")
-	if hrp then
-		local existing = hrp:FindFirstChild("SummitAura")
-		if existing then
-			existing:Destroy()
-		end
-	end
-end
-
-function ShopService.Init()
-	local Server = ServerScriptService:FindFirstChild("Server")
-	local DataService = require(Server:FindFirstChild("DataService"))
-
-	Remotes.BuyItem.OnServerInvoke = function(player, itemId)
-		local item, _categoryName = findItem(itemId)
+	-- Buy
+	remotes.BuyItem.OnServerInvoke = function(player, itemId)
+		local item = ShopConfig.FindItem(itemId)
 		if not item then
 			return false, "Item not found"
 		end
@@ -131,37 +106,42 @@ function ShopService.Init()
 			return false, "Not enough coins"
 		end
 		DataService.AddToInventory(player, itemId)
-		Remotes.UpdateCoins:FireClient(player, DataService.GetCoins(player))
+		remotes.UpdateCoins:FireClient(player, DataService.GetCoins(player))
 		return true, "Success"
 	end
 
-	Remotes.EquipItem.OnServerEvent:Connect(function(player, itemId)
+	-- Equip
+	remotes.EquipItem.OnServerEvent:Connect(function(player, itemId)
 		if not DataService.HasItem(player, itemId) then
 			return
 		end
-		local item, categoryName = findItem(itemId)
-		if not item then
+		local item, categoryName = ShopConfig.FindItem(itemId)
+		if not item or not player.Character then
 			return
 		end
 		if categoryName == "Trails" then
 			DataService.SetEquipped(player, "trail", itemId)
-			applyTrail(player, item)
+			applyTrail(player.Character, item)
 		elseif categoryName == "Auras" then
 			DataService.SetEquipped(player, "aura", itemId)
-			applyAura(player, item)
+			applyAura(player.Character, item)
 		end
 	end)
 
-	Remotes.UnequipItem.OnServerEvent:Connect(function(player, slot)
-		DataService.SetEquipped(player, slot, nil)
-		if slot == "trail" then
-			ShopService.RemoveTrail(player)
-		elseif slot == "aura" then
-			ShopService.RemoveAura(player)
+	-- Unequip
+	remotes.UnequipItem.OnServerEvent:Connect(function(player, slot)
+		DataService.SetEquipped(player, slot, "")
+		if player.Character then
+			if slot == "trail" then
+				applyTrail(player.Character, nil)
+			elseif slot == "aura" then
+				applyAura(player.Character, nil)
+			end
 		end
 	end)
 
-	Remotes.GetInventory.OnServerInvoke = function(player)
+	-- GetInventory
+	remotes.GetInventory.OnServerInvoke = function(player)
 		local data = DataService.GetData(player)
 		if not data then
 			return {}, {}
@@ -169,20 +149,21 @@ function ShopService.Init()
 		return data.inventory, data.equipped
 	end
 
+	-- Re-apply on respawn
 	Players.PlayerAdded:Connect(function(player)
-		player.CharacterAdded:Connect(function()
+		player.CharacterAdded:Connect(function(character)
 			task.wait(1)
 			local equipped = DataService.GetEquipped(player)
-			if equipped.trail then
-				local item = findItem(equipped.trail)
+			if equipped.trail and equipped.trail ~= "" then
+				local item = ShopConfig.FindItem(equipped.trail)
 				if item then
-					applyTrail(player, item)
+					applyTrail(character, item)
 				end
 			end
-			if equipped.aura then
-				local item = findItem(equipped.aura)
+			if equipped.aura and equipped.aura ~= "" then
+				local item = ShopConfig.FindItem(equipped.aura)
 				if item then
-					applyAura(player, item)
+					applyAura(character, item)
 				end
 			end
 		end)

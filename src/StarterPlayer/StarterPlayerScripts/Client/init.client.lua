@@ -1,17 +1,13 @@
 --[[
-	Client (init)
-	Bootstrap: loads all summit kit client controllers.
+	Client Bootstrap - Loads all client controllers
 ]]
 
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
-local playerScripts = player:WaitForChild("PlayerScripts")
-local Client = playerScripts:WaitForChild("Client")
+local script_folder = script
 
-local CheckpointFX = require(Client:WaitForChild("CheckpointFX"))
-local PhoneUI = require(Client:WaitForChild("PhoneUI"))
-local OverheadController = require(Client:WaitForChild("OverheadController"))
-local SettingsController = require(Client:WaitForChild("SettingsController"))
+local CheckpointFX = require(script_folder:WaitForChild("CheckpointFX"))
+local PhoneUI = require(script_folder:WaitForChild("PhoneUI"))
+local OverheadController = require(script_folder:WaitForChild("OverheadController"))
+local SettingsController = require(script_folder:WaitForChild("SettingsController"))
 
 CheckpointFX.Init()
 PhoneUI.Init()

@@ -1,15 +1,12 @@
 --[[
-	SettingsController
-	Applies visibility settings when new players join or characters load.
+	SettingsController - Applies local settings to newly spawned players
 ]]
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Shared = ReplicatedStorage:WaitForChild("Shared")
-local Remotes = require(Shared:WaitForChild("Remotes"))
-
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
+local remoteFolder = ReplicatedStorage:WaitForChild("SummitRemotes")
+local UpdateSetting = remoteFolder:WaitForChild("UpdateSetting")
 
 local SettingsController = {}
 
@@ -20,16 +17,18 @@ local localSettings = {
 }
 
 local function applyToCharacter(character)
+	if not character then
+		return
+	end
 	if localSettings.hidePlayers then
 		for _, part in ipairs(character:GetDescendants()) do
 			if part:IsA("BasePart") or part:IsA("Decal") then
 				part.Transparency = 1
-			elseif part:IsA("BillboardGui") or part:IsA("ParticleEmitter") or part:IsA("Trail") then
+			elseif part:IsA("BillboardGui") then
 				part.Enabled = false
 			end
 		end
 	end
-
 	if localSettings.hideAura then
 		local hrp = character:FindFirstChild("HumanoidRootPart")
 		if hrp then
@@ -39,7 +38,6 @@ local function applyToCharacter(character)
 			end
 		end
 	end
-
 	if localSettings.hideTrail then
 		local trail = character:FindFirstChild("SummitTrail")
 		if trail then
@@ -49,33 +47,26 @@ local function applyToCharacter(character)
 end
 
 function SettingsController.Init()
-	Remotes.UpdateSetting.OnClientEvent:Connect(function(key, value)
-		if localSettings[key] ~= nil then
-			localSettings[key] = value
-		end
+	UpdateSetting.OnClientEvent:Connect(function(key, value)
+		localSettings[key] = value
 	end)
 
-	Players.PlayerAdded:Connect(function(otherPlayer)
-		if otherPlayer == player then
-			return
-		end
-		otherPlayer.CharacterAdded:Connect(function(character)
-			task.wait(1)
-			applyToCharacter(character)
-		end)
-	end)
-
+	local localPlayer = Players.LocalPlayer
 	for _, otherPlayer in ipairs(Players:GetPlayers()) do
-		if otherPlayer ~= player then
-			if otherPlayer.Character then
-				applyToCharacter(otherPlayer.Character)
-			end
-			otherPlayer.CharacterAdded:Connect(function(character)
+		if otherPlayer ~= localPlayer then
+			otherPlayer.CharacterAdded:Connect(function(char)
 				task.wait(1)
-				applyToCharacter(character)
+				applyToCharacter(char)
 			end)
 		end
 	end
+
+	Players.PlayerAdded:Connect(function(otherPlayer)
+		otherPlayer.CharacterAdded:Connect(function(char)
+			task.wait(1)
+			applyToCharacter(char)
+		end)
+	end)
 end
 
 return SettingsController

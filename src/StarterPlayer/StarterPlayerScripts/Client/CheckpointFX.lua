@@ -1,6 +1,5 @@
 --[[
-	CheckpointFX
-	Screen shake + checkpoint notification + summit celebration + death effects.
+	CheckpointFX - Screen shake, notification, checkpoint sound
 ]]
 
 local Players = game:GetService("Players")
@@ -12,10 +11,14 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local CheckpointConfig = require(Shared:WaitForChild("CheckpointConfig"))
 local SummitConfig = require(Shared:WaitForChild("SummitConfig"))
-local Remotes = require(Shared:WaitForChild("Remotes"))
 
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
+
+local remoteFolder = ReplicatedStorage:WaitForChild("SummitRemotes")
+local CheckpointReached = remoteFolder:WaitForChild("CheckpointReached")
+local SummitReached = remoteFolder:WaitForChild("SummitReached")
+local PlayerDied = remoteFolder:WaitForChild("PlayerDied")
 
 local CheckpointFX = {}
 
@@ -34,13 +37,16 @@ local function createUI()
 	local scale = Instance.new("UIScale")
 	scale.Name = "AutoScale"
 	scale.Parent = screenGui
-
 	local function updateScale()
-		local viewportSize = workspace.CurrentCamera.ViewportSize
-		local ratio = math.clamp(viewportSize.X / 1920, 0.5, 1.5)
-		scale.Scale = ratio
+		local cam = workspace.CurrentCamera
+		if cam then
+			local ratio = math.clamp(cam.ViewportSize.X / 1920, 0.5, 1.5)
+			scale.Scale = ratio
+		end
 	end
-	workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateScale)
+	if workspace.CurrentCamera then
+		workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateScale)
+	end
 	task.defer(updateScale)
 
 	notifLabel = Instance.new("TextLabel")
@@ -71,7 +77,6 @@ local function screenShake()
 	if not camera then
 		return
 	end
-
 	local intensity = CheckpointConfig.ShakeIntensity
 	local duration = CheckpointConfig.ShakeDuration
 	local startTime = tick()
@@ -84,10 +89,10 @@ local function screenShake()
 			return
 		end
 		local progress = elapsed / duration
-		local currentIntensity = intensity * (1 - progress)
-		local offsetX = (math.random() - 0.5) * 2 * currentIntensity
-		local offsetY = (math.random() - 0.5) * 2 * currentIntensity
-		camera.CFrame = camera.CFrame * CFrame.new(offsetX * 0.01, offsetY * 0.01, 0)
+		local cur = intensity * (1 - progress)
+		local ox = (math.random() - 0.5) * 2 * cur * 0.01
+		local oy = (math.random() - 0.5) * 2 * cur * 0.01
+		camera.CFrame = camera.CFrame * CFrame.new(ox, oy, 0)
 	end)
 end
 
@@ -96,13 +101,13 @@ local function showNotification(text, color)
 		return
 	end
 	notifLabel.Text = text
-	notifLabel.TextColor3 = color or Color3.fromRGB(255, 255, 255)
+	notifLabel.TextColor3 = color
 	notifLabel.Visible = true
 	notifLabel.TextTransparency = 0
 	notifLabel.BackgroundTransparency = 0.3
 
 	task.delay(CheckpointConfig.NotificationDuration, function()
-		if notifLabel then
+		if notifLabel and notifLabel.Visible then
 			local tween = TweenService:Create(notifLabel, TweenInfo.new(0.5), {
 				TextTransparency = 1,
 				BackgroundTransparency = 1,
@@ -117,7 +122,7 @@ local function showNotification(text, color)
 	end)
 end
 
-local function playCheckpointSound()
+local function playSound()
 	if not checkpointSound then
 		checkpointSound = Instance.new("Sound")
 		checkpointSound.Name = "CheckpointSound"
@@ -131,25 +136,18 @@ end
 function CheckpointFX.Init()
 	createUI()
 
-	Remotes.CheckpointReached.OnClientEvent:Connect(function(checkpointIndex)
+	CheckpointReached.OnClientEvent:Connect(function(index)
 		screenShake()
-		playCheckpointSound()
-		local name = "Checkpoint " .. checkpointIndex
-		if CheckpointConfig.Names and CheckpointConfig.Names[checkpointIndex] then
-			name = CheckpointConfig.Names[checkpointIndex]
-		end
-		showNotification(name, Color3.fromRGB(255, 200, 0))
+		playSound()
+		showNotification("Checkpoint " .. index, Color3.fromRGB(255, 200, 0))
 	end)
 
-	Remotes.SummitReached.OnClientEvent:Connect(function(totalSummits)
+	SummitReached.OnClientEvent:Connect(function(totalSummits)
 		screenShake()
-		showNotification(
-			SummitConfig.CelebrationMessage .. " (" .. totalSummits .. " total)",
-			Color3.fromRGB(255, 215, 0)
-		)
+		showNotification(SummitConfig.CelebrationMessage .. " (" .. totalSummits .. ")", Color3.fromRGB(255, 215, 0))
 	end)
 
-	Remotes.PlayerDied.OnClientEvent:Connect(function()
+	PlayerDied.OnClientEvent:Connect(function()
 		screenShake()
 	end)
 end

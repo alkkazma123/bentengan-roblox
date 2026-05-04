@@ -1,30 +1,27 @@
 --[[
-	EmoteUI
-	Emote selection page inside the phone menu.
+	EmoteUI - Emote grid inside phone
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local EmoteList = require(Shared:WaitForChild("EmoteList"))
-local Remotes = require(Shared:WaitForChild("Remotes"))
+
+local remoteFolder = ReplicatedStorage:WaitForChild("SummitRemotes")
+local PlayEmote = remoteFolder:WaitForChild("PlayEmote")
 
 local EmoteUI = {}
 
-local function loadEmotes()
+local function getEmotes()
 	local emotes = {}
-	for _, emote in ipairs(EmoteList.Emotes) do
-		table.insert(emotes, emote)
+	for _, e in ipairs(EmoteList.Emotes) do
+		table.insert(emotes, e)
 	end
-	local emotesFolder = ReplicatedStorage:FindFirstChild("Emotes")
-	if emotesFolder then
-		for _, obj in ipairs(emotesFolder:GetChildren()) do
-			if obj:IsA("Animation") then
-				table.insert(emotes, {
-					id = obj.AnimationId,
-					name = obj.Name,
-					icon = obj:GetAttribute("Icon") or "rbxassetid://6031071057",
-				})
+	local folder = ReplicatedStorage:FindFirstChild("Emotes")
+	if folder then
+		for _, anim in ipairs(folder:GetChildren()) do
+			if anim:IsA("Animation") then
+				table.insert(emotes, { id = anim.AnimationId, name = anim.Name })
 			end
 		end
 	end
@@ -33,105 +30,87 @@ end
 
 function EmoteUI.Init(frame)
 	local title = Instance.new("TextLabel")
-	title.Name = "EmoteTitle"
-	title.Size = UDim2.new(1, 0, 0, 30)
-	title.Position = UDim2.new(0, 0, 0, 5)
+	title.Size = UDim2.new(1, 0, 0, 25)
 	title.BackgroundTransparency = 1
-	title.TextColor3 = Color3.fromRGB(255, 255, 255)
 	title.Text = "EMOTES"
-	title.TextSize = 18
+	title.TextColor3 = Color3.fromRGB(255, 255, 255)
+	title.TextSize = 16
 	title.Font = Enum.Font.GothamBold
 	title.Parent = frame
 	title.ZIndex = 6
 
+	-- Stop button
 	local stopBtn = Instance.new("TextButton")
-	stopBtn.Name = "StopEmote"
-	stopBtn.Size = UDim2.new(0.6, 0, 0, 30)
-	stopBtn.Position = UDim2.new(0.2, 0, 0, 35)
-	stopBtn.BackgroundColor3 = Color3.fromRGB(80, 30, 30)
+	stopBtn.Size = UDim2.new(0, 60, 0, 24)
+	stopBtn.Position = UDim2.new(1, -65, 0, 2)
+	stopBtn.BackgroundColor3 = Color3.fromRGB(150, 50, 0)
 	stopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-	stopBtn.Text = "Stop Emote"
-	stopBtn.TextSize = 13
+	stopBtn.Text = "STOP"
+	stopBtn.TextSize = 10
 	stopBtn.Font = Enum.Font.GothamBold
-	stopBtn.BorderSizePixel = 0
 	stopBtn.Parent = frame
 	stopBtn.ZIndex = 7
 
 	local stopCorner = Instance.new("UICorner")
-	stopCorner.CornerRadius = UDim.new(0, 8)
+	stopCorner.CornerRadius = UDim.new(0, 6)
 	stopCorner.Parent = stopBtn
 
 	stopBtn.MouseButton1Click:Connect(function()
-		Remotes.PlayEmote:FireServer(nil)
+		PlayEmote:FireServer(nil)
 	end)
 
+	-- Scroll with grid
 	local scroll = Instance.new("ScrollingFrame")
-	scroll.Name = "EmoteScroll"
-	scroll.Size = UDim2.new(1, -10, 1, -80)
-	scroll.Position = UDim2.new(0, 5, 0, 72)
+	scroll.Size = UDim2.new(1, -10, 1, -35)
+	scroll.Position = UDim2.new(0, 5, 0, 30)
 	scroll.BackgroundTransparency = 1
-	scroll.ScrollBarThickness = 4
-	scroll.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
+	scroll.ScrollBarThickness = 3
+	scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+	scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	scroll.Parent = frame
 	scroll.ZIndex = 6
 
-	local gridLayout = Instance.new("UIGridLayout")
-	gridLayout.CellSize = UDim2.new(0, 75, 0, 90)
-	gridLayout.CellPadding = UDim2.new(0, 8, 0, 8)
-	gridLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	gridLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	gridLayout.Parent = scroll
+	local grid = Instance.new("UIGridLayout")
+	grid.CellSize = UDim2.new(0, 75, 0, 80)
+	grid.CellPadding = UDim2.new(0, 6, 0, 6)
+	grid.Parent = scroll
 
-	local emotes = loadEmotes()
+	local emotes = getEmotes()
 
-	for i, emote in ipairs(emotes) do
-		local emoteBtn = Instance.new("TextButton")
-		emoteBtn.Name = "Emote_" .. emote.name
-		emoteBtn.Size = UDim2.new(0, 75, 0, 90)
-		emoteBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-		emoteBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-		emoteBtn.Text = ""
-		emoteBtn.BorderSizePixel = 0
-		emoteBtn.LayoutOrder = i
-		emoteBtn.Parent = scroll
-		emoteBtn.ZIndex = 7
-
-		local btnCorner = Instance.new("UICorner")
-		btnCorner.CornerRadius = UDim.new(0, 10)
-		btnCorner.Parent = emoteBtn
-
-		local iconLabel = Instance.new("TextLabel")
-		iconLabel.Name = "Icon"
-		iconLabel.Size = UDim2.new(1, 0, 0.6, 0)
-		iconLabel.BackgroundTransparency = 1
-		iconLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-		iconLabel.Text = "E"
-		iconLabel.TextSize = 28
-		iconLabel.Font = Enum.Font.GothamBold
-		iconLabel.Parent = emoteBtn
-		iconLabel.ZIndex = 8
-
-		local nameLabel = Instance.new("TextLabel")
-		nameLabel.Name = "EmoteName"
-		nameLabel.Size = UDim2.new(1, -4, 0.35, 0)
-		nameLabel.Position = UDim2.new(0, 2, 0.65, 0)
-		nameLabel.BackgroundTransparency = 1
-		nameLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-		nameLabel.Text = emote.name
-		nameLabel.TextSize = 10
-		nameLabel.TextWrapped = true
-		nameLabel.Font = Enum.Font.Gotham
-		nameLabel.Parent = emoteBtn
-		nameLabel.ZIndex = 8
-
-		emoteBtn.MouseButton1Click:Connect(function()
-			Remotes.PlayEmote:FireServer(emote.name)
-		end)
+	if #emotes == 0 then
+		local noEmotes = Instance.new("TextLabel")
+		noEmotes.Size = UDim2.new(1, 0, 0, 40)
+		noEmotes.BackgroundTransparency = 1
+		noEmotes.Text = "No emotes yet.\nAdd to EmoteList or Emotes folder."
+		noEmotes.TextColor3 = Color3.fromRGB(150, 150, 150)
+		noEmotes.TextSize = 11
+		noEmotes.Font = Enum.Font.Gotham
+		noEmotes.Parent = scroll
+		noEmotes.ZIndex = 6
+		return
 	end
 
-	gridLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-		scroll.CanvasSize = UDim2.new(0, 0, 0, gridLayout.AbsoluteContentSize.Y + 10)
-	end)
+	for _, emote in ipairs(emotes) do
+		local btn = Instance.new("TextButton")
+		btn.Size = UDim2.new(0, 75, 0, 80)
+		btn.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
+		btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+		btn.Text = emote.name
+		btn.TextSize = 10
+		btn.Font = Enum.Font.Gotham
+		btn.TextYAlignment = Enum.TextYAlignment.Bottom
+		btn.Parent = scroll
+		btn.ZIndex = 7
+
+		local btnCorner = Instance.new("UICorner")
+		btnCorner.CornerRadius = UDim.new(0, 8)
+		btnCorner.Parent = btn
+
+		local emoteName = emote.name
+		btn.MouseButton1Click:Connect(function()
+			PlayEmote:FireServer(emoteName)
+		end)
+	end
 end
 
 return EmoteUI

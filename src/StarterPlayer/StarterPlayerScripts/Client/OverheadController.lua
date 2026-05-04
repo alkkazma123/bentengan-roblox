@@ -1,18 +1,19 @@
 --[[
-	OverheadController
-	Listens for overhead updates and refreshes BillboardGui on other players.
+	OverheadController - Updates overhead when summit count changes
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local TitleConfig = require(Shared:WaitForChild("TitleConfig"))
-local Remotes = require(Shared:WaitForChild("Remotes"))
+
+local remoteFolder = ReplicatedStorage:WaitForChild("SummitRemotes")
+local UpdateOverhead = remoteFolder:WaitForChild("UpdateOverhead")
 
 local OverheadController = {}
 
 function OverheadController.Init()
-	Remotes.UpdateOverhead.OnClientEvent:Connect(function(targetPlayer, summitCount)
+	UpdateOverhead.OnClientEvent:Connect(function(targetPlayer, summits)
 		if not targetPlayer or not targetPlayer.Character then
 			return
 		end
@@ -20,23 +21,19 @@ function OverheadController.Init()
 		if not head then
 			return
 		end
-
-		local billboard = head:FindFirstChild("SummitOverhead")
-		if not billboard then
+		local bb = head:FindFirstChild("SummitOverhead")
+		if not bb then
 			return
 		end
-
-		local title, titleColor = TitleConfig.GetTitle(summitCount)
-
-		local summitLabel = billboard:FindFirstChild("Summits")
+		local summitLabel = bb:FindFirstChild("Summits")
 		if summitLabel then
-			summitLabel.Text = summitCount .. " Summits"
+			summitLabel.Text = summits .. " Summits"
 		end
-
-		local titleLabel = billboard:FindFirstChild("Title")
+		local titleLabel = bb:FindFirstChild("Title")
 		if titleLabel then
+			local title, color = TitleConfig.GetTitle(summits)
 			titleLabel.Text = title
-			titleLabel.TextColor3 = titleColor
+			titleLabel.TextColor3 = color
 		end
 	end)
 end

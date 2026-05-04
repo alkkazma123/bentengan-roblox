@@ -1,12 +1,10 @@
 --[[
 	TitleConfig
-	Defines titles based on total summit count.
-	Titles are checked top-down; first matching threshold wins.
+	Ubah Titles untuk menambah/mengganti title.
 ]]
 
 local TitleConfig = {}
 
--- Ordered from highest to lowest threshold
 TitleConfig.Titles = {
 	{ threshold = 1000, title = "Summit God", color = Color3.fromRGB(255, 215, 0) },
 	{ threshold = 500, title = "Summit Legend", color = Color3.fromRGB(255, 100, 255) },
@@ -18,7 +16,6 @@ TitleConfig.Titles = {
 	{ threshold = 1, title = "Rookie", color = Color3.fromRGB(180, 180, 180) },
 }
 
--- Default title for 0 summits
 TitleConfig.DefaultTitle = "Newbie"
 TitleConfig.DefaultColor = Color3.fromRGB(150, 150, 150)
 
