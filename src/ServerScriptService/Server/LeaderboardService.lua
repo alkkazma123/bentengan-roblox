@@ -274,34 +274,42 @@ local function updatePodiumAvatars(entries, podiumFolder)
 		if ok and model then
 			model.Name = "TopPlayer_" .. i
 
-			-- Position on top of podium using MoveTo (handles body correctly)
-			local podiumTop = podium.Position + Vector3.new(0, podium.Size.Y / 2 + 0.5, 0)
-			model:MoveTo(podiumTop)
+			-- Parent first so physics resolves
+			model.Parent = workspace
 
-			-- Wait a frame for joints to resolve then anchor
-			task.wait()
+			-- Calculate position: on top of podium
+			local podiumTop = podium.CFrame * CFrame.new(0, podium.Size.Y / 2 + 3, 0)
 
-			-- Anchor all parts so it won't fall
-			for _, part in ipairs(model:GetDescendants()) do
-				if part:IsA("BasePart") then
-					part.Anchored = true
-				end
+			-- Use PivotTo to position entire model correctly
+			model:PivotTo(podiumTop)
+
+			-- Only anchor HumanoidRootPart (keeps Motor6D joints for animation)
+			local hrp = model:FindFirstChild("HumanoidRootPart")
+			if hrp then
+				hrp.Anchored = true
 			end
 
-			-- Play idle animation
+			-- Disable humanoid states so it doesn't try to fall/walk
 			local humanoid = model:FindFirstChildOfClass("Humanoid")
 			if humanoid then
+				humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
+				humanoid.PlatformStand = true
+
+				-- Play idle animation
 				local animator = humanoid:FindFirstChildOfClass("Animator")
 				if not animator then
 					animator = Instance.new("Animator")
 					animator.Parent = humanoid
 				end
 
-				local anim = Instance.new("Animation")
-				anim.AnimationId = "rbxassetid://133709041743709"
-				local animTrack = animator:LoadAnimation(anim)
-				animTrack.Looped = true
-				animTrack:Play()
+				task.defer(function()
+					local animObj = Instance.new("Animation")
+					animObj.AnimationId = "rbxassetid://133709041743709"
+					local track = animator:LoadAnimation(animObj)
+					track.Looped = true
+					track.Priority = Enum.AnimationPriority.Action
+					track:Play()
+				end)
 			end
 
 			-- Add name tag above head
@@ -334,7 +342,6 @@ local function updatePodiumAvatars(entries, podiumFolder)
 				sumTag.Parent = bb
 			end
 
-			model.Parent = workspace
 			podiumModels[i] = model
 			print("[LeaderboardService] Avatar placed on Top" .. i .. ": " .. entry.name)
 		else
