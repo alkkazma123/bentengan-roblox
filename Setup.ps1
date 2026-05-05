@@ -101,13 +101,17 @@ Write-Host "  LANGKAH SELANJUTNYA:" -ForegroundColor White
 Write-Host ""
 Write-Host "  1. Buka Roblox Studio" -ForegroundColor White
 Write-Host "  2. Buka file SummitKit.rbxlx" -ForegroundColor White
-Write-Host "     (atau place kosong)" -ForegroundColor Gray
 Write-Host "  3. Install Rojo Plugin jika belum" -ForegroundColor White
 Write-Host "  4. Klik Rojo Plugin -> Connect" -ForegroundColor White
-Write-Host "  5. Tekan F5 untuk Play!" -ForegroundColor White
-Write-Host ""
-Write-Host "  Map (Start, Checkpoints, Finish," -ForegroundColor Gray
-Write-Host "  KillParts) akan di-build otomatis!" -ForegroundColor Gray
+Write-Host "  5. Buat part di workspace:" -ForegroundColor White
+Write-Host "     - Checkpoints/ (Start, Checkpoint_1..8, Finish)" -ForegroundColor Gray
+Write-Host "     - KillParts/ (part untuk kill)" -ForegroundColor Gray
+Write-Host "     - ServerLeaderboard (Part)" -ForegroundColor Gray
+Write-Host "     - GlobalLeaderboard (Part)" -ForegroundColor Gray
+Write-Host "     - LeaderboardPodiums/ (Top1, Top2, Top3)" -ForegroundColor Gray
+Write-Host "     - Lighting: Galaxy Sky" -ForegroundColor Gray
+Write-Host "     - ReplicatedStorage: Purple Galaxy, Sky" -ForegroundColor Gray
+Write-Host "  6. Tekan F5 untuk Play!" -ForegroundColor White
 Write-Host "==========================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Tekan Ctrl+C untuk stop server." -ForegroundColor Gray
