@@ -50,6 +50,16 @@ function SummitService.Init(remotes)
 		if cooldowns[player.UserId] and (now - cooldowns[player.UserId]) < SummitConfig.Cooldown then
 			return
 		end
+
+		-- VALIDATION: Must pass ALL checkpoints before summit
+		local currentCp = CheckpointService.GetCheckpointIndex(player)
+		local totalCp = require(Shared:WaitForChild("CheckpointConfig")).TotalCheckpoints
+		if currentCp < totalCp then
+			remotes.CheckpointReached:FireClient(player, -1)
+			print("[SummitService] " .. player.Name .. " tried summit but only at CP " .. currentCp .. "/" .. totalCp)
+			return
+		end
+
 		cooldowns[player.UserId] = now
 
 		-- Award summit + coins

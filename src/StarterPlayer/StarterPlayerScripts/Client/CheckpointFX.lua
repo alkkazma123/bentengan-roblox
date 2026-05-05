@@ -137,6 +137,10 @@ function CheckpointFX.Init()
 	createUI()
 
 	CheckpointReached.OnClientEvent:Connect(function(index)
+		if index == -1 then
+			showNotification("Complete all checkpoints first!", Color3.fromRGB(255, 80, 80))
+			return
+		end
 		screenShake()
 		playSound()
 		showNotification("Checkpoint " .. index, Color3.fromRGB(255, 200, 0))

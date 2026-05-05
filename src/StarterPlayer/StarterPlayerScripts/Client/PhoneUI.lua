@@ -16,6 +16,7 @@ local ShopUI = require(scriptFolder:WaitForChild("ShopUI"))
 local MusicPlayerUI = require(scriptFolder:WaitForChild("MusicPlayerUI"))
 local EmoteUI = require(scriptFolder:WaitForChild("EmoteUI"))
 local SettingsUI = require(scriptFolder:WaitForChild("SettingsUI"))
+local SkyUI = require(scriptFolder:WaitForChild("SkyUI"))
 
 local remoteFolder = ReplicatedStorage:WaitForChild("SummitRemotes")
 local UpdateCoins = remoteFolder:WaitForChild("UpdateCoins")
@@ -175,7 +176,7 @@ function PhoneUI.Init()
 	topBar.Parent = phoneFrame
 	topBar.ZIndex = 6
 
-	local tabNames = { "Shop", "Music", "Emotes", "Settings" }
+	local tabNames = { "Shop", "Music", "Emotes", "Settings", "Sky" }
 	local tabWidth = 1 / #tabNames
 
 	for i, tabName in ipairs(tabNames) do
@@ -213,7 +214,7 @@ function PhoneUI.Init()
 	content.ZIndex = 5
 
 	pages = {}
-	for i = 1, 4 do
+	for i = 1, 5 do
 		local page = Instance.new("Frame")
 		page.Name = "Page_" .. i
 		page.Size = UDim2.new(1, 0, 1, 0)
@@ -228,6 +229,7 @@ function PhoneUI.Init()
 	MusicPlayerUI.Init(pages[2])
 	EmoteUI.Init(pages[3])
 	SettingsUI.Init(pages[4])
+	SkyUI.CreateMenu(pages[5])
 
 	-- Swipe
 	local dragging = false
@@ -286,7 +288,7 @@ function PhoneUI.GoToPage(pageIndex)
 	-- Highlight active tab
 	local topBar = phoneFrame:FindFirstChild("TopBar")
 	if topBar then
-		for i, name in ipairs({ "Shop", "Music", "Emotes", "Settings" }) do
+		for i, name in ipairs({ "Shop", "Music", "Emotes", "Settings", "Sky" }) do
 			local tab = topBar:FindFirstChild("Tab_" .. name)
 			if tab then
 				tab.BackgroundColor3 = if i == pageIndex then Color3.fromRGB(60, 60, 70) else Color3.fromRGB(40, 40, 45)
