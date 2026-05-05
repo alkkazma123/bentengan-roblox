@@ -1,157 +1,95 @@
---!strict
--- Server bootstrap. Wires together every service and routes remote events.
+--[[
+	Server Bootstrap
+	Creates remotes then starts all services.
+	Prints warnings for any missing parts.
+]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Shared = ReplicatedStorage:WaitForChild("Shared")
-local Remotes = require(Shared:WaitForChild("Remotes"))
+local ServerScriptService = game:GetService("ServerScriptService")
 
-local DataService = require(script.DataService)
-local ShopService = require(script.ShopService)
-local LobbyManager = require(script.LobbyManager)
-local AbilityService = require(script.AbilityService)
-local AntiExploit = require(script.AntiExploit)
-local Leaderstats = require(script.Leaderstats)
+print("[SummitKit] Server starting...")
 
--- Build arenas + lobbies
-LobbyManager.init()
+-- Create remote folder (server only)
+local remoteFolder = Instance.new("Folder")
+remoteFolder.Name = "SummitRemotes"
+remoteFolder.Parent = ReplicatedStorage
 
--- Prevent players from auto-spawning into a random SpawnLocation before they
--- pick a lobby. We handle spawn placement manually.
-Players.CharacterAutoLoads = true
-
-local function sendFullSync(player: Player)
-	Remotes.LobbyStateUpdate:FireClient(player, LobbyManager.getSnapshot())
-	ShopService.pushUpdate(player)
+local function createEvent(name)
+	local remote = Instance.new("RemoteEvent")
+	remote.Name = name
+	remote.Parent = remoteFolder
+	return remote
 end
 
-local function onPlayerAdded(player: Player)
-	DataService.load(player)
-	Leaderstats.attach(player)
-	ShopService.pushUpdate(player)
-
-	player.CharacterAdded:Connect(function(char)
-		-- Default placement: send them to Lobby 1's lobby pad if they haven't joined a lobby.
-		task.wait(0.25)
-		local lobby = LobbyManager.getLobbyOfPlayer(player)
-		if not lobby then
-			local hrp = char:FindFirstChild("HumanoidRootPart")
-			if hrp and hrp:IsA("BasePart") then
-				-- Place at first arena's lobby pad by default (a free floating pad)
-				local arenasFolder = workspace:FindFirstChild("Arenas")
-				local firstArena = arenasFolder and arenasFolder:FindFirstChild("Arena_1")
-				if firstArena then
-					local pad = firstArena:FindFirstChild("LobbySpawn")
-					if pad and pad:IsA("BasePart") then
-						hrp.CFrame = pad.CFrame + Vector3.new(math.random(-6, 6), 5, math.random(-6, 6))
-					end
-				end
-			end
-		end
-	end)
+local function createFunc(name)
+	local remote = Instance.new("RemoteFunction")
+	remote.Name = name
+	remote.Parent = remoteFolder
+	return remote
 end
 
-for _, p in ipairs(Players:GetPlayers()) do
-	task.spawn(onPlayerAdded, p)
-end
-Players.PlayerAdded:Connect(onPlayerAdded)
+local Remotes = {
+	CheckpointReached = createEvent("CheckpointReached"),
+	SummitReached = createEvent("SummitReached"),
+	PlayerDied = createEvent("PlayerDied"),
+	UpdateOverhead = createEvent("UpdateOverhead"),
+	UpdateCoins = createEvent("UpdateCoins"),
+	EquipItem = createEvent("EquipItem"),
+	UnequipItem = createEvent("UnequipItem"),
+	UpdateSetting = createEvent("UpdateSetting"),
+	PlayEmote = createEvent("PlayEmote"),
+	ApplyAvatar = createEvent("ApplyAvatar"),
+	ResetAvatar = createEvent("ResetAvatar"),
+	ChangeSky = createEvent("ChangeSky"),
+	BuyItem = createFunc("BuyItem"),
+	GetInventory = createFunc("GetInventory"),
+}
+
+print("[SummitKit] Remotes created.")
+
+-- Load services
+local Server = ServerScriptService:WaitForChild("Server")
+local DataService = require(Server:WaitForChild("DataService"))
+local CheckpointService = require(Server:WaitForChild("CheckpointService"))
+local SummitService = require(Server:WaitForChild("SummitService"))
+local KillPartService = require(Server:WaitForChild("KillPartService"))
+local OverheadService = require(Server:WaitForChild("OverheadService"))
+local ShopService = require(Server:WaitForChild("ShopService"))
+local EmoteService = require(Server:WaitForChild("EmoteService"))
+local AvatarService = require(Server:WaitForChild("AvatarService"))
+local LeaderboardService = require(Server:WaitForChild("LeaderboardService"))
+local SkyService = require(Server:WaitForChild("SkyService"))
+
+-- Init services
+DataService.Init()
+CheckpointService.Init(Remotes)
+SummitService.Init(Remotes)
+KillPartService.Init(Remotes)
+OverheadService.Init(Remotes)
+ShopService.Init(Remotes)
+EmoteService.Init(Remotes)
+AvatarService.Init(Remotes)
+LeaderboardService.Init(Remotes)
+SkyService.Init(Remotes)
+
+-- Player lifecycle
+Players.PlayerAdded:Connect(function(player)
+	DataService.LoadPlayer(player)
+	OverheadService.SetupPlayer(player)
+
+	task.wait(1)
+	Remotes.UpdateCoins:FireClient(player, DataService.GetCoins(player))
+end)
+
 Players.PlayerRemoving:Connect(function(player)
-	DataService.unload(player)
+	DataService.SavePlayer(player)
 end)
+
 game:BindToClose(function()
-	for _, p in ipairs(Players:GetPlayers()) do
-		DataService.save(p)
+	for _, player in ipairs(Players:GetPlayers()) do
+		DataService.SavePlayer(player)
 	end
 end)
 
--- ========== Remote handlers ==========
-
-Remotes.RequestJoinLobby.OnServerEvent:Connect(function(player, index)
-	if not AntiExploit.allow(player, "JoinLobby") then
-		return
-	end
-	if type(index) ~= "number" then
-		return
-	end
-	local ok, err = LobbyManager.joinLobby(player, index)
-	if not ok then
-		Remotes.AbilityFeedback:FireClient(player, { Type = "Error", Message = err or "Gagal join" })
-	end
-end)
-
-Remotes.RequestLeaveLobby.OnServerEvent:Connect(function(player)
-	if not AntiExploit.allow(player, "LeaveLobby") then
-		return
-	end
-	LobbyManager.leaveLobby(player)
-end)
-
-Remotes.RequestBuyAbility.OnServerEvent:Connect(function(player, abilityId)
-	if not AntiExploit.allow(player, "BuyAbility", { 4, 2 }) then
-		return
-	end
-	if type(abilityId) ~= "string" then
-		return
-	end
-	local ok, err = ShopService.buy(player, abilityId)
-	if not ok then
-		Remotes.AbilityFeedback:FireClient(player, { Type = "ShopError", Message = err or "Gagal beli" })
-	end
-end)
-
-Remotes.RequestEquipAbility.OnServerEvent:Connect(function(player, abilityId)
-	if not AntiExploit.allow(player, "EquipAbility") then
-		return
-	end
-	if type(abilityId) ~= "string" then
-		return
-	end
-	local ok, err = ShopService.equip(player, abilityId)
-	if not ok then
-		Remotes.AbilityFeedback:FireClient(player, { Type = "ShopError", Message = err or "Gagal equip" })
-	end
-end)
-
-Remotes.RequestUnequipAbility.OnServerEvent:Connect(function(player, abilityId)
-	if not AntiExploit.allow(player, "UnequipAbility") then
-		return
-	end
-	if type(abilityId) ~= "string" then
-		return
-	end
-	local ok, err = ShopService.unequip(player, abilityId)
-	if not ok then
-		Remotes.AbilityFeedback:FireClient(player, { Type = "ShopError", Message = err or "Gagal unequip" })
-	end
-end)
-
-Remotes.AbilityActivate.OnServerEvent:Connect(function(player, abilityId)
-	if not AntiExploit.allow(player, "AbilityActivate", { 6, 2 }) then
-		return
-	end
-	if abilityId == "Fly" then
-		local lobby = LobbyManager.getLobbyOfPlayer(player)
-		if not lobby or lobby.state ~= "InMatch" then
-			Remotes.AbilityFeedback:FireClient(player, { Type = "Error", Message = "Harus dalam match" })
-			return
-		end
-		local ok, err = AbilityService.activateFly(player, lobby.matchId)
-		if not ok then
-			Remotes.AbilityFeedback:FireClient(player, { Type = "AbilityError", Message = err or "Gagal aktifkan" })
-		end
-	end
-end)
-
-Remotes.ClientReady.OnServerEvent:Connect(function(player)
-	sendFullSync(player)
-end)
-
-Remotes.GetProfile.OnServerInvoke = function(player)
-	return DataService.getProfile(player)
-end
-
-Remotes.GetLobbyState.OnServerInvoke = function(_player)
-	return LobbyManager.getSnapshot()
-end
-
-print("[Bentengan] Server initialized with", require(Shared:WaitForChild("GameConfig")).NumLobbies, "lobbies.")
+print("[SummitKit] Server ready! All services loaded.")
