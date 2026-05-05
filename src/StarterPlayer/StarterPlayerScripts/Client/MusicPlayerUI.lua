@@ -84,6 +84,7 @@ local function playSong(index)
 	sound = Instance.new("Sound")
 	sound.SoundId = playlist[currentIndex].id
 	sound.Volume = volume
+	sound.PlaybackSpeed = playlist[currentIndex].speed or 1
 	sound.Parent = SoundService
 	sound:Play()
 	isPlaying = true
